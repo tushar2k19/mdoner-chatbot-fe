@@ -7,13 +7,13 @@
 </template>
 
 <script>
-import Header1 from './components/Header1.vue'
+// import Header1 from './components/Header1.vue'
 
 const AuthenticatedLayout = {
   components: { Header1 },
   template: `
     <div>
-      <Header1 class="header"/>
+      // <Header1 class="header"/>
       <div class="content-wrapper">
         <slot></slot>
       </div>
