@@ -1,12 +1,12 @@
 <template>
   <div id="app">
-    <component :is="layout">
-      <router-view />
-    </component>
+    <!-- <component :is="layout">
+    </component> -->
+    <router-view />
   </div>
 </template>
 
-<script>
+<!-- <script>
 // import Header1 from './components/Header1.vue'
 
 const AuthenticatedLayout = {
@@ -199,4 +199,4 @@ li {
   display: inline-block !important;
   margin-right: 4px !important;
 }
-</style>
+</style> -->
