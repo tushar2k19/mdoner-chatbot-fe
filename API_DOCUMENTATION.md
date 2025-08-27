@@ -6,9 +6,10 @@
 3. [Backend APIs](#backend-apis)
 4. [OpenAI APIs](#openai-apis)
 5. [External APIs](#external-apis)
-6. [Error Handling](#error-handling)
-7. [Rate Limiting](#rate-limiting)
-8. [Testing](#testing)
+6. [Table Structure (half done)] (#table_structures)
+7. [Error Handling](#error-handling)
+8. [Rate Limiting](#rate-limiting)
+9. [Testing](#testing)
 
 ---
 
@@ -184,59 +185,85 @@ Authorization: Bearer <jwt_token>
   "documents": [
     {
       "id": 1,
-      "name": "Manipur DPR",
-      "original_filename": "manipur_dpr.pdf",
-      "pages": 120,
-      "type": "text",
-      "status": "available",
+      "name": "Nagaland Innovation Hub",
+      "original_filename": "nagaland_innovation_hub.pdf",
       "file_size": 5242880,
+      "status": "active",
       "created_at": "2024-01-01T10:00:00Z"
     },
     {
       "id": 2,
-      "name": "Meghalaya DPR",
-      "original_filename": "meghalaya_dpr.pdf",
-      "pages": 80,
-      "type": "ocr",
-      "status": "available",
+      "name": "Meghalaya Skywalk",
+      "original_filename": "meghalaya_skywalk.pdf",
       "file_size": 3145728,
+      "status": "active",
       "created_at": "2024-01-01T10:00:00Z"
     }
   ]
 }
 ```
 
-#### 2.2 Upload Documents (Admin Only)
+#### 2.2 Get PDF for Viewing
 ```http
-POST /api/admin/files
+GET /api/documents/:id/pdf
 Authorization: Bearer <jwt_token>
-Content-Type: multipart/form-data
+```
+
+**Response (200 OK):**
+```json
+{
+  "pdf_url": "https://dpr-chatbot-documents.s3.amazonaws.com/dpr-documents/2024/01/nagaland_innovation_hub.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...",
+  "document_name": "Nagaland Innovation Hub",
+  "filename": "nagaland_innovation_hub.pdf",
+  "expires_at": "2024-01-01T11:00:00Z"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "error": {
+    "code": "DOCUMENT_NOT_FOUND",
+    "message": "Document not found or access denied"
+  }
+}
+```
+
+#### 2.3 Create Document Record (Admin)
+```http
+POST /api/admin/documents
+Authorization: Bearer <jwt_token>
 ```
 
 **Request Body:**
-```form-data
-files: [file1.pdf, file2.pdf, file3.pdf]
+```json
+{
+  "name": "Nagaland Innovation Hub",
+  "original_filename": "nagaland_innovation_hub.pdf",
+  "s3_key": "dpr-documents/2024/01/nagaland_innovation_hub.pdf",
+  "s3_bucket": "dpr-chatbot-documents",
+  "s3_region": "us-east-1",
+  "file_size": 5242880,
+  "mime_type": "application/pdf"
+}
 ```
 
 **Response (201 Created):**
 ```json
 {
-  "message": "Files uploaded successfully",
-  "files": [
-    {
-      "id": 1,
-      "name": "Manipur DPR",
-      "status": "processing",
-      "openai_file_id": "file-abc123"
-    }
-  ],
-  "processing_jobs": [
-    {
-      "file_id": 1,
-      "job_id": "job_xyz789",
-      "status": "queued"
-    }
-  ]
+  "document": {
+    "id": 1,
+    "name": "Nagaland Innovation Hub",
+    "original_filename": "nagaland_innovation_hub.pdf",
+    "s3_key": "dpr-documents/2024/01/nagaland_innovation_hub.pdf",
+    "s3_bucket": "dpr-chatbot-documents",
+    "s3_region": "us-east-1",
+    "file_size": 5242880,
+    "mime_type": "application/pdf",
+    "status": "active",
+    "created_at": "2024-01-01T10:00:00Z"
+  },
+  "message": "Document created successfully"
 }
 ```
 
@@ -315,19 +342,18 @@ Authorization: Bearer <jwt_token>
       "id": 1,
       "role": "user",
       "content": "What are the project timelines?",
-      "citations": null,
+      "source": null,  // (for User prompts)
       "created_at": "2024-01-01T10:00:00Z"
     },
     {
       "id": 2,
       "role": "assistant",
-      "content": "Based on the Manipur DPR, the project timeline shows Phase 1 starting in Q1 2024...",
-      "citations": [
-        {
-          "type": "pdf",
-          "document": "Manipur DPR"
-        }
-      ],
+      "content": {
+        "answer": "Based on the Manipur DPR, the project timeline shows Phase 1 starting in Q1 2024...",
+        "citations": ["Manipur_DPR.pdf"],
+        "needs_consent": false
+      },
+      "source": "dpr",
       "created_at": "2024-01-01T10:00:30Z"
     }
   ],
@@ -346,7 +372,8 @@ Authorization: Bearer <jwt_token>
 **Request Body:**
 ```json
 {
-  "content": "What are the project timelines?"
+  "content": "What are the project timelines?",
+  "prepend_web_summary": "Optional: previous web result summary (1–2 lines) if last message source was web"
 }
 ```
 
@@ -356,36 +383,34 @@ Authorization: Bearer <jwt_token>
   "message": {
     "id": 3,
     "role": "assistant",
-    "content": "Based on the Manipur DPR, the project timeline shows Phase 1 starting in Q1 2024...",
-    "citations": [
-      {
-        "type": "pdf",
-        "document": "Manipur DPR"
-      }
-    ],
+    "content": {
+      "answer": "Based on the Manipur DPR, the project timeline shows Phase 1 starting in Q1 2024...",
+      "citations": ["Manipur_DPR.pdf"],
+      "needs_consent": false
+    },
+    "source": "dpr",
     "created_at": "2024-01-01T10:01:00Z"
   },
-  "streaming": false
+  "streaming": true
 }
 ```
 
-**Streaming Response (200 OK):**
+**Response when no DPR information found (200 OK):**
 ```json
 {
   "message": {
-    "id": 3,
+    "id": 4,
     "role": "assistant",
-    "content": "Based on the Manipur DPR...",
-    "citations": [
-      {
-        "type": "pdf",
-        "document": "Manipur DPR"
-      }
-    ],
-    "created_at": "2024-01-01T10:01:00Z"
+    "content": {
+      "answer": "",
+      "citations": [],
+      "needs_consent": true,
+      "message": "Result not found, do you wish to search the internet?"
+    },
+    "source": "dpr",
+    "created_at": "2024-01-01T10:02:00Z"
   },
-  "streaming": true,
-  "stream_id": "stream_xyz789"
+  "streaming": false
 }
 ```
 
@@ -404,7 +429,7 @@ Authorization: Bearer <jwt_token>
   "message": "Conversation deleted successfully"
 }
 ```
-
+<!-- 
 ### 4. External Search
 
 #### 4.1 Allow Web Search
@@ -429,29 +454,33 @@ Authorization: Bearer <jwt_token>
   "message": {
     "id": 4,
     "role": "assistant",
-    "content": "Based on recent web search results and considering your work with Manipur and Meghalaya DPR projects, where you've been discussing project timelines and Phase 1 starting in Q1 2024, here's what I found about renewable energy developments...",
-    "citations": [
-      {
-        "type": "url",
-        "url": "https://example.com/article1",
-        "title": "Latest Renewable Energy Trends"
-      },
-      {
-        "type": "url",
-        "url": "https://example.com/article2",
-        "title": "Solar Energy Breakthroughs"
-      }
-    ],
+    "content": {
+      "answer": "Based on recent web search results and considering your work with Manipur and Meghalaya DPR projects, where you've been discussing project timelines and Phase 1 starting in Q1 2024, here's what I found about renewable energy developments...",
+      "citations": [
+        {
+          "type": "url",
+          "url": "https://example.com/article1",
+          "title": "Latest Renewable Energy Trends"
+        },
+        {
+          "type": "url",
+          "url": "https://example.com/article2",
+          "title": "Solar Energy Breakthroughs"
+        }
+      ],
+      "needs_consent": false
+    },
+    "source": "web",
     "created_at": "2024-01-01T10:35:00Z"
   },
   "search_context": {
     "conversation_id": 123,
     "context_messages": 5,
-    "selected_documents": ["Manipur DPR", "Meghalaya DPR"],
+    "selected_documents": ["Manipur_DPR.pdf", "Meghalaya_DPR.pdf"],
     "conversation_summary": "Project timelines, Phase 1 Q1 2024, renewable energy costs"
   }
 }
-```
+``` -->
 
 ### 5. System Status
 
@@ -553,7 +582,7 @@ Authorization: Bearer <openai_api_key>
 {
   "role": "user",
   "content": "What are the project timelines?",
-  "file_ids": ["file-abc123", "file-def456"]
+  // "file_ids": ["file-abc123", "file-def456"] 
 }
 ```
 
