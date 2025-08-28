@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div id="app">
     <component :is="layout">
       <router-view />
@@ -199,4 +199,10 @@ li {
   display: inline-block !important;
   margin-right: 4px !important;
 }
-</style>
+</style> -->
+ <template>
+  <div id="app">
+    <h1>Welcome to the Chatbot Application</h1>
+    <router-view />
+</div>
+</template>
