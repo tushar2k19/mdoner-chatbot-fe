@@ -231,7 +231,7 @@ CREATE TABLE messages (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   conversation_id BIGINT NOT NULL,
   role ENUM('user', 'assistant') NOT NULL,
-  content TEXT NOT NULL,                            
+  content TEXT NOT NULL,
   -- For user: plain text; For assistant: JSON string with answer, citations, needs_consent, message
   source ENUM('dpr', 'web') NOT NULL DEFAULT 'dpr',
   openai_message_id VARCHAR(255),                  
