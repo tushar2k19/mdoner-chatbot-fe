@@ -1,42 +1,15 @@
 <!-- <template>
   <div id="app">
-    <component :is="layout">
-      <router-view />
-    </component>
+    <router-view />
   </div>
 </template>
 
 <script>
-// import Header1 from './components/Header1.vue'
-
-const AuthenticatedLayout = {
-  components: { Header1 },
-  template: `
-    <div>
-      // <Header1 class="header"/>
-      <div class="content-wrapper">
-        <slot></slot>
-      </div>
-    </div>
-  `
-}
-
-const UnauthenticatedLayout = {
-  template: `
-    <div><slot></slot></div>
-  `
-}
-
 export default {
   name: 'App',
   data () {
     return {
-      isAuthenticated: true
-    }
-  },
-  computed: {
-    layout () {
-      return this.isAuthenticated ? AuthenticatedLayout : UnauthenticatedLayout
+      isAuthenticated: false
     }
   },
   watch: {
@@ -49,13 +22,30 @@ export default {
   },
   methods: {
     checkAuthStatus () {
-      const newAuthStatus = !!localStorage.getItem('signedIn')
+      const token = localStorage.getItem('jwt_access')
+      const newAuthStatus = token && this.isTokenValid(token)
+      
       if (this.isAuthenticated !== newAuthStatus) {
         this.isAuthenticated = newAuthStatus
         this.$nextTick(() => {
           window.scrollTo(0, 0)
-          console.log('Forced re-render and attempted scroll')
         })
+      }
+    },
+    isTokenValid(token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const currentTime = Math.floor(Date.now() / 1000)
+        
+        if (payload.exp && payload.exp < currentTime + 300) {
+          localStorage.removeItem('jwt_access')
+          return false
+        }
+        
+        return true
+      } catch (error) {
+        localStorage.removeItem('jwt_access')
+        return false
       }
     }
   }
