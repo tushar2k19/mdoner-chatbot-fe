@@ -6,6 +6,7 @@ import router from './router'
 import VueAxios from 'vue-axios'
 import store from './store'
 import {securedAxiosInstance, plainAxiosInstance} from './backend/axios/index1'
+import backendHealthService from './services/BackendHealthService.js'
 import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 // import ActionCable from 'actioncable'
@@ -53,6 +54,27 @@ function clearInvalidTokens() {
 
 // Run token cleanup on startup
 clearInvalidTokens()
+
+// Start backend health monitoring
+backendHealthService.startHealthMonitoring()
+
+// Listen for backend health changes
+window.addEventListener('backendHealthChange', (event) => {
+  const { isHealthy } = event.detail
+  if (!isHealthy) {
+    console.warn('Backend is currently unavailable')
+    // You can show a global notification here
+    if (window.showGlobalNotification) {
+      window.showGlobalNotification('Backend service is currently unavailable. Please try again later.', 'warning')
+    }
+  } else {
+    console.log('Backend is back online')
+    // You can show a success notification here
+    if (window.showGlobalNotification) {
+      window.showGlobalNotification('Backend service is back online!', 'success')
+    }
+  }
+})
 
 /* eslint-disable no-new */
 new Vue({
