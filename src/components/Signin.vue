@@ -1,7 +1,5 @@
 
 <script>
-import CryptoJS from 'crypto-js'
-
 export default {
   name: 'Signin',
   data () {
@@ -9,8 +7,7 @@ export default {
       email: '',
       password: '',
       error: '',
-      ENCRYPTION_KEY: 'f1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6',
-      showPassword: false // <-- Add for eye icon
+      showPassword: false
     }
   },
   created: function () {
@@ -26,7 +23,7 @@ export default {
     checkSignedin: function () {
       const token = localStorage.getItem('jwt_access')
       if (token && this.isTokenValid(token)) {
-        this.$router.replace('/')
+        this.$router.replace('/dashboard')
       }
     },
     isTokenValid(token) {
@@ -64,41 +61,26 @@ export default {
         })
     },
 
-    decryptResponse (encryptedData) {
-      try {
-        const key = CryptoJS.enc.Utf8.parse(this.ENCRYPTION_KEY)
-        const rawData = CryptoJS.enc.Base64.parse(encryptedData)
-        const iv = CryptoJS.lib.WordArray.create(rawData.words.slice(0, 4))
-        const encrypted = CryptoJS.lib.WordArray.create(rawData.words.slice(4))
-        const decrypted = CryptoJS.AES.decrypt(
-          { ciphertext: encrypted },
-          key,
-          {
-            iv: iv,
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7
-          }
-        )
-        const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8)
-        return JSON.parse(decryptedStr)
-      } catch (error) {
-        console.error('Decryption failed:', error)
-        return null
-      }
-    },
     signinSuccessful (response) {
       if (!response || !response.data || !response.data.access) {
         this.signinFailed(response)
         return
       }
+      
+      // Store the JWT token
       localStorage.setItem('jwt_access', response.data.access)
+      
+      // Store user data in Vuex store
+      if (response.data.user) {
+        this.$store.dispatch('login', response.data.user)
+      }
+      
       this.error = ''
-      this.$router.replace('/')
+      this.$router.replace('/dashboard')
     },
     signinFailed: function (error) {
-      this.error = (error.response && error.response.data && error.response.data.error) || ''
+      this.error = (error.response && error.response.data && error.response.data.error) || 'Login failed. Please try again.'
       this.password = ''
-      this.email = ''
       localStorage.removeItem('jwt_access')
     },
     togglePassword() {

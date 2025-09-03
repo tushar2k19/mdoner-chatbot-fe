@@ -5,12 +5,17 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    user: null,
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
     notifications: []
   },
   mutations: {
     SET_USER (state, user) {
       state.user = user
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
     },
     ADD_NOTIFICATION (state, notification) {
       state.notifications.unshift(notification)
@@ -23,9 +28,13 @@ export default new Vuex.Store({
     }
   },
   actions: {
+    login ({ commit }, userData) {
+      commit('SET_USER', userData)
+    },
     logout ({ commit }) {
-      // Call your logout API
       commit('SET_USER', null)
+      localStorage.removeItem('jwt_access')
     }
   }
 })
+
