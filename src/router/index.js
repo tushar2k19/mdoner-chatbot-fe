@@ -1,25 +1,30 @@
-import Vue from 'vue'
-import Router from 'vue-router'
-import Home from '../components/Home.vue'
-import Signin from '../components/Signin.vue'
+import Vue from "vue";
+import Router from "vue-router";
+import Home from "../components/Home.vue";
+import Signin from "../components/Signin.vue";
+import TestServices from "@/components/TestServices.vue";
 
-
-Vue.use(Router)
+Vue.use(Router);
 
 const router = new Router({
-  mode: 'history',
+  mode: "history",
   routes: [
     {
-      path: '/',
-      name: 'Home',
+      path: "/",
+      name: "Home",
       component: Home,
       meta: { requiresAuth: true }
     },
     {
-      path: '/login',
-      name: 'Signin',
+      path: "/login",
+      name: "Signin",
       component: Signin
     },
+    {
+      path: "/test-services",
+      name: "TestServices",
+      component: TestServices
+    }
     // {
     //   path: '/signup',
     //   name: 'Signup',
@@ -106,7 +111,7 @@ const router = new Router({
     //   props: route => ({ reviewId: route.params.id }),
     //   meta: { requiresAuth: true }
     // }
-    
+
     // {
     //   path: '/dashboard',
     //   name: 'Dashboard',
@@ -114,48 +119,48 @@ const router = new Router({
     //   meta: { requiresAuth: true }
     // },
   ]
-})
+});
 
 router.beforeEach((to, from, next) => {
-  const access = localStorage.getItem('jwt_access')
-  const isAuthenticated = access && isTokenValid(access)
+  const access = localStorage.getItem("jwt_access");
+  const isAuthenticated = access && isTokenValid(access);
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
-      next({ name: 'Signin' })
+      next({ name: "Signin" });
     } else {
-      next()
+      next();
     }
-  } else if (to.name === 'Signin') {
+  } else if (to.name === "Signin") {
     if (isAuthenticated) {
-      next({ name: 'Home' })
+      next({ name: "Home" });
     } else {
-      next()
+      next();
     }
   } else {
-    next()
+    next();
   }
-})
+});
 
 function isTokenValid(token) {
   try {
     // Decode JWT token to check expiration
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const currentTime = Math.floor(Date.now() / 1000)
-    
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+
     // Check if token is expired (with 5 minute buffer)
     if (payload.exp && payload.exp < currentTime + 300) {
       // Token is expired or will expire soon, remove it
-      localStorage.removeItem('jwt_access')
-      return false
+      localStorage.removeItem("jwt_access");
+      return false;
     }
-    
-    return true
+
+    return true;
   } catch (error) {
     // Invalid token format, remove it
-    console.error('Invalid token format:', error)
-    localStorage.removeItem('jwt_access')
-    return false
+    console.error("Invalid token format:", error);
+    localStorage.removeItem("jwt_access");
+    return false;
   }
 }
 
@@ -179,4 +184,4 @@ function isTokenValid(token) {
 //   }
 // })
 
-export default router
+export default router;
