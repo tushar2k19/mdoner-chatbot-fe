@@ -12,8 +12,8 @@ const securedAxiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  // Add timeout and debug interceptors
-  timeout: 10000
+          // Add timeout and debug interceptors - increased for OpenAI API calls
+        timeout: 60000 // 60 seconds for OpenAI API calls
 })
 
 const plainAxiosInstance = axios.create({

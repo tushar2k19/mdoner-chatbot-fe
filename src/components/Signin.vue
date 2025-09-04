@@ -91,9 +91,23 @@ export default {
         this.signinFailed(response)
         return
       }
+      
+      // Store the token
       localStorage.setItem('jwt_access', response.data.access)
+      
+      // Set user in localStorage
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+      } else {
+        // If no user data in response, create a basic user object from email
+        localStorage.setItem('user', JSON.stringify({
+          email: this.email,
+          id: null
+        }))
+      }
+      
       this.error = ''
-      this.$router.replace('/')
+      this.$router.replace('/dashboard')
     },
     signinFailed: function (error) {
       this.error = (error.response && error.response.data && error.response.data.error) || ''

@@ -41,6 +41,8 @@ module.exports = {
     // Additional rules that might cause issues
     'quotes': 'off',
     'no-unused-vars': 'warn', // Change to warning instead of error
-    'vue/no-unused-components': 'warn'
+    'vue/no-unused-components': 'warn',
+    // Fix for catch clause variable shadowing
+    'no-shadow-restricted-names': 'off'
   }
 }
