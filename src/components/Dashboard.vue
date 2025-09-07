@@ -512,14 +512,64 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       await this.handleSendMessage(query);
     },
 
-    handleAllowWebSearch(message) {
-      // For now, just show a success message since web search isn't implemented
-      this.$toast.success('Web search feature coming soon!');
-    },
+    async handleAllowWebSearch(message) {
+  this.loading = true;
+  
+  try {
+    // Get the original query from the message that needs consent
+    const originalQuery = message.content.query || 'Search query';
+    
+    // Call the external search API
+    const response = await this.$http.secured.post('/external_search/search', {
+      query: originalQuery,
+      conversation_id: this.currentConversation.id
+    });
+    
+    // Add the web search result to messages
+    if (response.data.message) {
+      this.messages.push(response.data.message);
+      this.saveMessagesToStorage();
+      this.$toast.success('Web search completed!');
+    }
+    
+  } catch (error) {
+    console.error('External search error:', error);
+    
+    // Add error message to chat
+    this.messages.push({
+      id: Date.now(),
+      role: 'assistant',
+      content: {
+        answer: 'Sorry, I couldn\'t search the internet right now. Please try again later.',
+        citations: [],
+        needs_consent: false
+      },
+      source: 'web',
+      created_at: new Date().toISOString()
+    });
+    this.saveMessagesToStorage();
+    this.$toast.error('Web search failed');
+  } finally {
+    this.loading = false;
+  }
+},
 
-    handleDenyWebSearch() {
-      this.$toast.info('Web search cancelled');
+handleDenyWebSearch() {
+  // Add a message indicating user declined web search
+  this.messages.push({
+    id: Date.now(),
+    role: 'assistant',
+    content: {
+      answer: 'I understand you don\'t want to search the internet. Is there anything else I can help you with regarding the DPR documents?',
+      citations: [],
+      needs_consent: false
     },
+    source: 'dpr',
+    created_at: new Date().toISOString()
+  });
+  this.saveMessagesToStorage();
+  this.$toast.info('Web search cancelled');
+},
 
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
