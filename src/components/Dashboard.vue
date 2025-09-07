@@ -748,29 +748,28 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
           return;
         }
         
-        // Send the message with web search consent
-        const response = await this.$http.secured.post(`/api/conversations/${this.currentConversation.id}/messages`, {
-          content: lastUserMessage.content,
-          prepend_web_summary: "User has consented to web search for this query."
+        // Call DIRECT web search endpoint (not conversation endpoint)
+        const response = await this.$http.secured.post('/api/external_search/search', {
+          query: lastUserMessage.content,
+          conversation_id: this.currentConversation.id
         }, {
           timeout: 90000 // 90 seconds for web search processing
         });
         
         // Handle the web search response
-        const apiPostData = response && response.data && response.data.data ? response.data.data : response.data;
-        if (apiPostData && apiPostData.message) {
-          const aiMessage = apiPostData.message;
-          const fullText = this.getMessageText(aiMessage.content);
+        if (response.data && response.data.message) {
+          const webMessage = response.data.message;
+          const fullText = this.getMessageText(webMessage.content);
           
           // Add message with typing effect
-          aiMessage.isTyping = true;
-          aiMessage.displayText = '';
-          this.messages.push(aiMessage);
+          webMessage.isTyping = true;
+          webMessage.displayText = '';
+          this.messages.push(webMessage);
           this.saveMessagesToStorage();
           
           // Start typing effect
           this.$nextTick(() => {
-            this.simulateTyping(aiMessage, fullText);
+            this.simulateTyping(webMessage, fullText);
           });
           
           this.$toast.success('Web search completed!');
