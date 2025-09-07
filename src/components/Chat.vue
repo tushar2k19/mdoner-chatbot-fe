@@ -31,17 +31,20 @@
             <div v-if="getCitations(message.content).length > 0" class="citations">
               <div class="citations-label">Sources:</div>
               <div class="citation-chips">
-                <span 
+                <a 
                   v-for="citation in getCitations(message.content)" 
-                  :key="citation"
-                  class="citation-chip"
+                  :key="citation.url || citation"
+                  :href="getCitationUrl(citation)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="citation-chip citation-link"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
                     <polyline points="14,2 14,8 20,8"/>
                   </svg>
-                  {{ citation }}
-                </span>
+                  {{ getCitationTitle(citation) }}
+                </a>
               </div>
             </div>
             
@@ -233,7 +236,30 @@ export default {
         }
       }
       return content.needs_consent === true;
-    }
+    },
+
+
+
+      getCitationTitle(citation) {
+        // Handle both string citations (from DPR) and object citations (from web search)
+        if (typeof citation === 'string') {
+          return citation;
+        }
+        
+        // For web search citations, return the title
+        return citation.title || 'Web Source';
+      },
+
+      getCitationUrl(citation) {
+        // Handle both string citations (from DPR) and object citations (from web search)
+        if (typeof citation === 'string') {
+          // For DPR citations, we don't have URLs, so return '#'
+          return '#';
+        }
+        
+        // For web search citations, return the URL
+        return citation.url || '#';
+      }
   },
 
   watch: {
@@ -381,6 +407,24 @@ export default {
   font-size: 12px;
   font-weight: 500;
 }
+
+/* Citation Links */
+.citation-link {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.citation-link:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.citation-link:active {
+  transform: translateY(0);
+}
+
 
 /* Consent Request */
 .consent-request {
