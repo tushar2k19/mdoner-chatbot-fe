@@ -4,12 +4,41 @@
     <div :class="['sidebar', { 'sidebar-collapsed': sidebarCollapsed }]">
       <!-- Sidebar Header -->
       <div class="sidebar-header">
+        <!-- Logo (left side) -->
+        <div v-if="!sidebarCollapsed" class="sidebar-logo">
+          <img src="@/assets/logo.png" alt="DPR Logo" class="logo-img" />
+        </div>
+        
+        <!-- Collapse Button (right side) -->
+        <button @click="toggleSidebar" class="collapse-btn">
+          <!-- Logo Icon (shown when collapsed) -->
+          <div class="logo-icon" v-if="sidebarCollapsed">
+            <img src="@/assets/logo.png" alt="DPR Logo" class="logo-img-small" />
+          </div>
+          <!-- Hamburger Menu Icon (shown when expanded or on hover) -->
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      <!-- New Chat Section -->
+      <div v-if="!sidebarCollapsed" class="new-chat-section">
         <button @click="createNewConversation" class="new-chat-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          <span v-if="!sidebarCollapsed">New chat</span>
+          <span>New chat</span>
         </button>
+      </div>
+
+      <!-- Previous Chats Heading -->
+      <div v-if="!sidebarCollapsed && conversations.list.length > 0" class="previous-chats-heading">
+        <h3>Previous Chats</h3>
       </div>
 
       <!-- Conversations List -->
@@ -47,7 +76,7 @@
 
       <!-- Sidebar Footer -->
       <div class="sidebar-footer">
-        <div class="user-menu">
+        <div class="user-menu" @click="toggleUserDropdown">
           <div class="user-info">
             <div class="user-avatar">
               {{ user.email ? user.email.charAt(0).toUpperCase() : 'U' }}
@@ -57,13 +86,38 @@
               <div class="user-role">DPR User</div>
             </div>
           </div>
-          <button @click="logout" class="logout-btn" :title="sidebarCollapsed ? 'Logout' : ''">
+        </div>
+        
+        <!-- User Dropdown Menu -->
+        <div v-if="showUserDropdown && !sidebarCollapsed" class="user-dropdown">
+          <div class="dropdown-item" @click="setTheme('light')" :class="{ 'active': !isDarkTheme }">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <span>Light Theme</span>
+          </div>
+          <div class="dropdown-item" @click="setTheme('dark')" :class="{ 'active': isDarkTheme }">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span>Dark Theme</span>
+          </div>
+          <div class="dropdown-item logout-item" @click="logout">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
               <polyline points="16,17 21,12 16,7"/>
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-          </button>
+            <span>Logout</span>
+          </div>
         </div>
       </div>
     </div>
@@ -72,16 +126,31 @@
     <div class="main-content">
       <!-- Header -->
       <div class="main-header">
-        <button @click="toggleSidebar" class="sidebar-toggle">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
         <h1>DPR Chatbot</h1>
         <div class="header-info">
-          <span class="document-count">{{ documents.length }} DPR Documents</span>
+          <!-- Theme Toggle Button -->
+          <div class="theme-toggle-container">
+            <button @click="toggleTheme" class="theme-toggle-btn" :class="{ 'dark': isDarkTheme }">
+              <div class="toggle-slider">
+                <div class="toggle-icon">
+                  <svg v-if="!isDarkTheme" width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+          </div>
           <span 
             :class="['backend-status', { 'healthy': isBackendHealthy, 'unhealthy': !isBackendHealthy }]" 
             @click="testBackendHealth" 
@@ -92,69 +161,24 @@
             <span class="status-dot"></span>
             {{ isBackendHealthy ? 'Backend Online' : 'Backend Offline' }}
           </span>
+          
         </div>
       </div>
 
       <!-- Chat Area -->
       <div class="chat-container">
-        <!-- Welcome Screen -->
-        <div v-if="!currentConversation" class="welcome-screen">
-          <div class="welcome-content">
-            <h2>Welcome to DPR Chatbot</h2>
-            <p>Ask me anything about the DPR (Detailed Project Report) documents from Northeast India.</p>
-            
-            <div class="available-docs">
-              <h3>Available Documents:</h3>
-              <div class="docs-grid">
-                <div v-for="doc in documents" :key="doc.id" class="doc-card">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                  <span>{{ doc.name }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="example-queries">
-              <h3>Try asking:</h3>
-              <div class="query-examples">
-                <button @click="askExample('What are the project timelines for all DPR projects?')" class="example-btn">
-                  📅 What are the project timelines for all DPR projects?
-                </button>
-                <button @click="askExample('Compare the budget allocation across different states')" class="example-btn">
-                  💰 Compare the budget allocation across different states
-                </button>
-                <button @click="askExample('What are the environmental impact mitigation measures?')" class="example-btn">
-                  🌿 What are the environmental impact mitigation measures?
-                </button>
-                <button @click="askExample('Tell me about the Meghalaya Skywalk infrastructure details')" class="example-btn">
-                  🌉 Tell me about the Meghalaya Skywalk infrastructure details
-                </button>
-                <button @click="askExample('What are the employment opportunities in these projects?')" class="example-btn">
-                  👷 What are the employment opportunities in these projects?
-                </button>
-                <button @click="askExample('Which project has the highest cost and why?')" class="example-btn">
-                  📊 Which project has the highest cost and why?
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- Chat Component -->
         <Chat 
-          v-if="currentConversation"
           :current-conversation="currentConversation"
           :messages="messages"
           :loading="loading"
           :user="user"
+          :is-new-chat="messages.length === 0"
           @send-message="handleSendMessage"
           @allow-web-search="handleAllowWebSearch"
           @deny-web-search="handleDenyWebSearch"
+          @chat-started="handleChatStarted"
         />
       </div>
     </div>
@@ -178,7 +202,10 @@ export default {
       messages: [],
       loading: false,
       sidebarCollapsed: false,
-      isBackendHealthy: true
+      isBackendHealthy: true,
+      showUserDropdown: false,
+      isDarkTheme: false,
+      welcomeMessage: ''
     }
   },
 
@@ -199,6 +226,13 @@ export default {
     // Load state from localStorage
     this.loadStateFromStorage();
     
+    // Load theme preference
+    const savedTheme = localStorage.getItem('dpr_theme');
+    if (savedTheme === 'dark') {
+      this.isDarkTheme = true;
+      document.documentElement.classList.add('dark-theme');
+    }
+    
     // Check backend health
     await this.checkBackendHealth();
     await this.loadInitialData();
@@ -208,12 +242,49 @@ export default {
       this.updateBackendHealth(event.detail.isHealthy);
     };
     window.addEventListener('backendHealthChange', this.backendHealthListener);
+
+    // Listen for clicks outside dropdown
+    this.clickOutsideListener = (event) => {
+      if (!event.target.closest('.sidebar-footer')) {
+        this.showUserDropdown = false;
+      }
+    };
+    document.addEventListener('click', this.clickOutsideListener);
+
+    // Listen for page visibility changes to reload messages when tab becomes active
+    this.visibilityChangeListener = () => {
+      if (!document.hidden && this.currentConversation) {
+        // Tab became visible and we have a current conversation
+        // Reload messages to ensure we have the latest data
+        this.reloadCurrentConversationMessages();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityChangeListener);
+
+    // Listen for window focus to reload messages when window regains focus
+    this.windowFocusListener = () => {
+      if (this.currentConversation) {
+        // Window gained focus and we have a current conversation
+        // Reload messages to ensure we have the latest data
+        this.reloadCurrentConversationMessages();
+      }
+    };
+    window.addEventListener('focus', this.windowFocusListener);
   },
 
   beforeDestroy() {
-    // Clean up event listener
+    // Clean up event listeners
     if (this.backendHealthListener) {
       window.removeEventListener('backendHealthChange', this.backendHealthListener);
+    }
+    if (this.clickOutsideListener) {
+      document.removeEventListener('click', this.clickOutsideListener);
+    }
+    if (this.visibilityChangeListener) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeListener);
+    }
+    if (this.windowFocusListener) {
+      window.removeEventListener('focus', this.windowFocusListener);
     }
   },
 
@@ -241,6 +312,20 @@ export default {
         if (storedSidebarState !== null) {
           this.sidebarCollapsed = JSON.parse(storedSidebarState);
         }
+        
+        // Restore current conversation if it exists
+        const storedCurrentConversationId = localStorage.getItem('dpr_current_conversation_id');
+        if (storedCurrentConversationId && this.conversations.list.length > 0) {
+          const conversation = this.conversations.list.find(c => c.id == storedCurrentConversationId);
+          if (conversation) {
+            this.currentConversation = conversation;
+            this.conversations.current = conversation;
+            // Load messages for the restored conversation
+            this.$nextTick(() => {
+              this.loadConversationMessages(conversation.id);
+            });
+          }
+        }
       } catch (error) {
         console.error('Error loading state from localStorage:', error);
       }
@@ -252,6 +337,10 @@ export default {
         localStorage.setItem('dpr_conversations', JSON.stringify(this.conversations));
         localStorage.setItem('dpr_documents', JSON.stringify(this.documents));
         localStorage.setItem('dpr_sidebar_collapsed', JSON.stringify(this.sidebarCollapsed));
+        // Also save current conversation ID separately for better persistence
+        if (this.currentConversation) {
+          localStorage.setItem('dpr_current_conversation_id', this.currentConversation.id);
+        }
       } catch (error) {
         console.error('Error saving state to localStorage:', error);
       }
@@ -345,10 +434,15 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         const newConversation = response.data.conversation;
         
         this.conversations.list.unshift(newConversation);
-        this.selectConversation(newConversation.id);
+        
+        // Set the new conversation as current to go directly to chat
+        this.currentConversation = newConversation;
+        this.conversations.current = newConversation;
+        this.messages = [];
         
         // Save to localStorage
         this.saveStateToStorage();
+        this.saveMessagesToStorage();
         
         this.$toast.success('New conversation created!');
       } catch (error) {
@@ -369,6 +463,11 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       this.saveStateToStorage();
 
       // Load messages for this conversation
+      await this.loadConversationMessages(conversationId);
+    },
+
+    // Helper method to load messages for a conversation
+    async loadConversationMessages(conversationId) {
       try {
         const response = await this.$http.secured.get(`/api/conversations/${conversationId}/messages`);
         // Support both wrapped { success, data: { messages: [] } } and plain { messages: [] }
@@ -394,6 +493,25 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       } catch (error) {
         console.error('Failed to load messages:', error);
         this.messages = [];
+      }
+    },
+
+    // Method to reload messages for the current conversation
+    async reloadCurrentConversationMessages() {
+      if (!this.currentConversation) {
+        console.log('No current conversation to reload messages for');
+        return;
+      }
+
+      console.log('Reloading messages for current conversation:', this.currentConversation.id);
+      
+      try {
+        // Load fresh messages from the backend
+        await this.loadConversationMessages(this.currentConversation.id);
+        console.log('Successfully reloaded messages for conversation:', this.currentConversation.id);
+      } catch (error) {
+        console.error('Failed to reload messages for current conversation:', error);
+        // Don't show error to user as this is a background operation
       }
     },
 
@@ -448,6 +566,16 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       this.$toast.info('Processing your message... This may take 15-30 seconds for complex queries.');
       
       try {
+        // Ensure we have a current conversation
+        if (!this.currentConversation) {
+          console.warn('No current conversation found, creating new one. Messages count:', this.messages.length);
+          console.warn('Current conversation state:', this.currentConversation);
+          await this.createNewConversation();
+        }
+
+        // Check if this is the first message before adding it
+        const isFirstMessage = this.messages.length === 0;
+
         // Push the user's message locally for immediate UI feedback
         this.messages.push({
           id: Date.now(),
@@ -457,6 +585,17 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
           created_at: new Date().toISOString()
         });
         this.saveMessagesToStorage();
+
+        // Update conversation title if this is the first message
+        if (isFirstMessage && this.currentConversation) {
+          try {
+            const newTitle = this.generateConversationTitle(messageText);
+            await this.updateConversationTitle(this.currentConversation.id, newTitle);
+          } catch (error) {
+            console.warn('Failed to update conversation title:', error);
+            // Don't let title update failure break the message sending
+          }
+        }
 
         // Use a longer timeout for OpenAI API calls
         const response = await this.$http.secured.post(`/api/conversations/${this.currentConversation.id}/messages`, {
@@ -468,8 +607,21 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         // Support both wrapped { success, data: { message } } and plain { message }
         const apiPostData = response && response.data && response.data.data ? response.data.data : response.data;
         if (apiPostData && apiPostData.message) {
-          this.messages.push(apiPostData.message);
+          const aiMessage = apiPostData.message;
+          
+          const fullText = this.getMessageText(aiMessage.content);
+          
+          // Add message with typing effect
+          aiMessage.isTyping = true;
+          aiMessage.displayText = '';
+          this.messages.push(aiMessage);
           this.saveMessagesToStorage();
+          
+          // Start typing effect
+          this.$nextTick(() => {
+            this.simulateTyping(aiMessage, fullText);
+          });
+          
           this.$toast.success('Response received!');
         }
       } catch (error) {
@@ -512,19 +664,211 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       await this.handleSendMessage(query);
     },
 
-    handleAllowWebSearch(message) {
-      // For now, just show a success message since web search isn't implemented
-      this.$toast.success('Web search feature coming soon!');
+    getMessageText(content) {
+      if (typeof content === 'string') {
+        try {
+          const parsed = JSON.parse(content);
+          return parsed.answer || content;
+        } catch (e) {
+          return content;
+        }
+      }
+      return content.answer || '';
+    },
+
+    // Typing effect for AI responses
+    async simulateTyping(message, fullText) {
+      message.isTyping = true;
+      message.displayText = '';
+      
+      for (let i = 0; i <= fullText.length; i++) {
+        message.displayText = fullText.substring(0, i);
+        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay between characters
+      }
+      
+      message.isTyping = false;
+      message.displayText = fullText;
+    },
+
+    // Generate conversation title from first message
+    generateConversationTitle(messageText) {
+      // Clean and truncate the message
+      let title = messageText.trim();
+      
+      // Remove common question words and make it more concise
+      title = title.replace(/^(what|how|when|where|why|can|could|would|should|is|are|do|does|did|will|tell me about|explain|describe|give me|show me|help me with)/i, '');
+      title = title.trim();
+      
+      // Capitalize first letter
+      title = title.charAt(0).toUpperCase() + title.slice(1);
+      
+      // Truncate to reasonable length (max 50 characters)
+      if (title.length > 50) {
+        title = title.substring(0, 47) + '...';
+      }
+      
+      // If title is too short or empty, use a default
+      if (title.length < 3) {
+        title = 'New Chat';
+      }
+      
+      return title;
+    },
+
+    // Update conversation title
+    async updateConversationTitle(conversationId, newTitle) {
+      try {
+        await this.$http.secured.put(`/api/conversations/${conversationId}`, {
+          title: newTitle
+        });
+        
+        // Update local conversation title
+        const conversation = this.conversations.list.find(c => c.id === conversationId);
+        if (conversation) {
+          conversation.title = newTitle;
+          this.saveStateToStorage();
+        }
+      } catch (error) {
+        console.error('Failed to update conversation title:', error);
+      }
+    },
+
+    async handleAllowWebSearch(message) {
+      try {
+        // Show loading state
+        this.loading = true;
+        this.$toast.info('Searching the web for your query...');
+        
+        // Get the user's original question from the conversation
+        const userMessages = this.messages.filter(m => m.role === 'user');
+        const lastUserMessage = userMessages[userMessages.length - 1];
+        
+        if (!lastUserMessage) {
+          this.$toast.error('Could not find your original question');
+          return;
+        }
+        
+        // Send the message with web search consent
+        const response = await this.$http.secured.post(`/api/conversations/${this.currentConversation.id}/messages`, {
+          content: lastUserMessage.content,
+          prepend_web_summary: "User has consented to web search for this query."
+        }, {
+          timeout: 90000 // 90 seconds for web search processing
+        });
+        
+        // Handle the web search response
+        const apiPostData = response && response.data && response.data.data ? response.data.data : response.data;
+        if (apiPostData && apiPostData.message) {
+          const aiMessage = apiPostData.message;
+          const fullText = this.getMessageText(aiMessage.content);
+          
+          // Add message with typing effect
+          aiMessage.isTyping = true;
+          aiMessage.displayText = '';
+          this.messages.push(aiMessage);
+          this.saveMessagesToStorage();
+          
+          // Start typing effect
+          this.$nextTick(() => {
+            this.simulateTyping(aiMessage, fullText);
+          });
+          
+          this.$toast.success('Web search completed!');
+        }
+      } catch (error) {
+        console.error('Web search error:', error);
+        this.$toast.error('Web search failed. Please try again.');
+      } finally {
+        this.loading = false;
+      }
     },
 
     handleDenyWebSearch() {
-      this.$toast.info('Web search cancelled');
+      this.$toast.info('Web search cancelled. Please try asking a different question about the DPR documents.');
+    },
+
+
+    handleChatStarted() {
+      // This method is called when user starts typing in a new chat
+      // The transition from centered to bottom position is handled by CSS
+      // No additional logic needed here
+    },
+
+    startConversationFromWelcome() {
+      if (!this.welcomeMessage.trim()) return;
+      
+      // Create new conversation and start with the welcome message
+      this.createNewConversation();
+      this.$nextTick(() => {
+        this.handleSendMessage(this.welcomeMessage);
+        this.welcomeMessage = '';
+      });
+    },
+
+    handleWelcomeKeyDown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        this.startConversationFromWelcome();
+      }
+    },
+
+    handleWelcomeInput() {
+      // Auto-resize textarea based on content
+      this.autoResizeWelcomeTextarea();
+    },
+
+    autoResizeWelcomeTextarea() {
+      const textarea = this.$refs.welcomeMessageInput;
+      if (textarea) {
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Set height based on content, with max height limit
+        const maxHeight = 120; // Maximum height in pixels
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.height = newHeight + 'px';
+        
+        // Enable scrolling if content exceeds max height
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+      }
     },
 
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
+      // Close dropdown when sidebar collapses
+      this.showUserDropdown = false;
       // Save to localStorage
       this.saveStateToStorage();
+    },
+
+    toggleUserDropdown() {
+      this.showUserDropdown = !this.showUserDropdown;
+    },
+
+    setTheme(theme) {
+      this.isDarkTheme = (theme === 'dark');
+      // Apply theme to document
+      if (this.isDarkTheme) {
+        document.documentElement.classList.add('dark-theme');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+      }
+      // Save theme preference
+      localStorage.setItem('dpr_theme', theme);
+      // Close dropdown
+      this.showUserDropdown = false;
+    },
+
+    toggleTheme() {
+      this.isDarkTheme = !this.isDarkTheme;
+      // Apply theme to document
+      if (this.isDarkTheme) {
+        document.documentElement.classList.add('dark-theme');
+        localStorage.setItem('dpr_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('dpr_theme', 'light');
+      }
     },
 
 
@@ -541,6 +885,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         localStorage.removeItem('dpr_documents');
         localStorage.removeItem('dpr_messages');
         localStorage.removeItem('dpr_sidebar_collapsed');
+        localStorage.removeItem('dpr_current_conversation_id');
         localStorage.removeItem('jwt_access');
         localStorage.removeItem('user');
         
@@ -562,28 +907,130 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 /* Sidebar Styles */
 .sidebar {
   width: 260px;
-  background: #171717;
+  background: #181818;
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  transition: width 0.2s ease, background-color 0.3s ease;
+}
+
+.dark-theme .sidebar {
+  background: #181818;
+}
+
+.dark-theme .sidebar-collapsed {
+  background: #181818;
 }
 
 .sidebar-collapsed {
   width: 60px;
 }
 
+/* Updated Sidebar Header Styles */
 .sidebar-header {
   padding: 12px;
   border-bottom: 1px solid #2d2d30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  box-sizing: border-box;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  color: #8e8ea0;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapse-btn:hover {
+  background: #2d2d30;
+  color: white;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-img-small {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* When sidebar is expanded, show menu icon */
+.sidebar:not(.sidebar-collapsed) .collapse-btn .logo-icon {
+  display: none;
+}
+
+.sidebar:not(.sidebar-collapsed) .collapse-btn .menu-icon {
+  display: flex;
+}
+
+/* When sidebar is collapsed, show logo icon by default */
+.sidebar-collapsed .collapse-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.sidebar-collapsed .collapse-btn .logo-icon {
+  display: flex;
+}
+
+.sidebar-collapsed .collapse-btn .menu-icon {
+  display: none;
+}
+
+/* When hovering over collapsed sidebar button, show menu icon */
+.sidebar-collapsed .collapse-btn:hover .logo-icon {
+  display: none;
+}
+
+.sidebar-collapsed .collapse-btn:hover .menu-icon {
+  display: flex;
+}
+
+/* New Chat Section */
+.new-chat-section {
+  padding: 8px 0;
 }
 
 .new-chat-btn {
-  width: 100%;
+  width: calc(100% - 16px);
   background: transparent;
-  border: 1px solid #4d4d4f;
+  border: none;
   color: white;
   padding: 12px;
+  margin: 2px 8px;
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -595,6 +1042,20 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .new-chat-btn:hover {
   background: #2d2d30;
+}
+
+/* Previous Chats Heading */
+.previous-chats-heading {
+  padding: 12px 20px 8px 20px;
+}
+
+.previous-chats-heading h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8e8ea0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
 }
 
 .conversations-list {
@@ -673,12 +1134,21 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .sidebar-footer {
   padding: 12px;
   border-top: 1px solid #2d2d30;
+  position: relative;
 }
 
 .user-menu {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.user-menu:hover {
+  background: #2d2d30;
 }
 
 .user-info {
@@ -728,7 +1198,54 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   transition: color 0.2s ease;
 }
 
-.logout-btn:hover {
+/* User Dropdown Menu */
+.user-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  right: 12px;
+  background: #2d2d30;
+  border: 1px solid #4d4d4f;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  margin-bottom: 8px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #4d4d4f;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #343541;
+}
+
+.dropdown-item.active {
+  background: #10a37f;
+  color: white;
+}
+
+.dropdown-item.active:hover {
+  background: #0d8f68;
+}
+
+.dropdown-item.logout-item {
+  color: #ff6b6b;
+}
+
+.dropdown-item.logout-item:hover {
+  background: #ff6b6b;
   color: white;
 }
 
@@ -742,26 +1259,14 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .main-header {
   background: white;
-  border-bottom: 1px solid #e5e5e5;
   padding: 12px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
+  height: 60px;
+  box-sizing: border-box;
 }
 
-.sidebar-toggle {
-  background: transparent;
-  border: none;
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #565869;
-  transition: background 0.2s ease;
-}
-
-.sidebar-toggle:hover {
-  background: #f1f1f1;
-}
 
 .main-header h1 {
   font-size: 20px;
@@ -775,6 +1280,61 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle-btn {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  background: #e5e5e5;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.theme-toggle-btn:hover {
+  background: #d1d5db;
+}
+
+.theme-toggle-btn.dark {
+  background: #10a37f;
+}
+
+.theme-toggle-btn.dark:hover {
+  background: #0d8f68;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-btn.dark .toggle-slider {
+  transform: translateX(30px);
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .document-count {
@@ -807,16 +1367,106 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .welcome-content h2 {
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 40px;
+  font-weight: 700;
   color: #2d333a;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .welcome-content p {
   font-size: 16px;
   color: #565869;
   margin-bottom: 40px;
+}
+
+.welcome-subtitle {
+  font-size: 20px;
+  color: #565869;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.welcome-greeting {
+  font-size: 22px;
+  color: #2d333a;
+  margin-bottom: 40px;
+  font-weight: 600;
+}
+
+/* Welcome Chat Input */
+.welcome-chat-input {
+  margin-top: 40px;
+}
+
+.welcome-message-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.welcome-input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.welcome-input-wrapper:hover {
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.welcome-input-wrapper:focus-within {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  border-color: #10a37f;
+}
+
+.welcome-message-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: inherit;
+  max-height: 120px;
+  min-height: 24px;
+  background: transparent;
+  color: #2d333a;
+}
+
+.welcome-message-input::placeholder {
+  color: #8e8ea0;
+  font-size: 16px;
+}
+
+.welcome-send-button {
+  background: #10a37f;
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
+}
+
+.welcome-send-button:hover:not(:disabled) {
+  background: #0d8f68;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.4);
+}
+
+.welcome-send-button:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
 }
 
 .available-docs h3,
@@ -957,5 +1607,125 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* Dark Theme Styles */
+.dark-theme .dashboard {
+  background: #2d2d30;
+}
+
+.dark-theme .main-content {
+  background: #2d2d30;
+}
+
+.dark-theme .main-header {
+  background: #2d2d30;
+}
+
+.dark-theme .main-header h1 {
+  color: white;
+}
+
+.dark-theme .theme-toggle-btn {
+  background: #4d4d4f;
+}
+
+.dark-theme .theme-toggle-btn:hover {
+  background: #565869;
+}
+
+.dark-theme .theme-toggle-btn.dark {
+  background: #10a37f;
+}
+
+.dark-theme .theme-toggle-btn.dark:hover {
+  background: #0d8f68;
+}
+
+.dark-theme .toggle-slider {
+  background: #2d2d30;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+
+.dark-theme .document-count {
+  background: #4d4d4f;
+  color: #e5e5e5;
+}
+
+.dark-theme .backend-status.healthy {
+  background-color: #1f2937;
+  color: #10b981;
+}
+
+.dark-theme .backend-status.unhealthy {
+  background-color: #1f2937;
+  color: #ef4444;
+}
+
+.dark-theme .welcome-screen {
+  background: #2d2d30;
+}
+
+.dark-theme .welcome-content h2 {
+  color: white;
+}
+
+.dark-theme .welcome-content p {
+  color: #d1d5db;
+}
+
+.dark-theme .welcome-subtitle {
+  color: #d1d5db;
+}
+
+.dark-theme .welcome-greeting {
+  color: white;
+}
+
+.dark-theme .welcome-input-wrapper {
+  background: #3a3a3f;
+  border: 1px solid #4d4d4f;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .welcome-input-wrapper:hover {
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.dark-theme .welcome-input-wrapper:focus-within {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  border-color: #10a37f;
+}
+
+.dark-theme .welcome-message-input {
+  background: transparent;
+  color: white;
+}
+
+.dark-theme .welcome-message-input::placeholder {
+  color: #8e8ea0;
+}
+
+.dark-theme .available-docs h3,
+.dark-theme .example-queries h3 {
+  color: white;
+}
+
+.dark-theme .doc-card {
+  background: #2d2d30;
+  border: 1px solid #4d4d4f;
+  color: white;
+}
+
+.dark-theme .example-btn {
+  background: #2d2d30;
+  border: 1px solid #4d4d4f;
+  color: white;
+}
+
+.dark-theme .example-btn:hover {
+  border-color: #10a37f;
+  background: #343541;
 }
 </style>
