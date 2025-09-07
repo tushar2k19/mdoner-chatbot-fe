@@ -734,54 +734,64 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     },
 
     async handleAllowWebSearch(message) {
-      try {
-        // Show loading state
-        this.loading = true;
-        this.$toast.info('Searching the web for your query...');
-        
-        // Get the user's original question from the conversation
-        const userMessages = this.messages.filter(m => m.role === 'user');
-        const lastUserMessage = userMessages[userMessages.length - 1];
-        
-        if (!lastUserMessage) {
-          this.$toast.error('Could not find your original question');
-          return;
-        }
-        
-        // Send the message with web search consent
-        const response = await this.$http.secured.post(`/api/conversations/${this.currentConversation.id}/messages`, {
-          content: lastUserMessage.content,
-          prepend_web_summary: "User has consented to web search for this query."
-        }, {
-          timeout: 90000 // 90 seconds for web search processing
-        });
-        
-        // Handle the web search response
-        const apiPostData = response && response.data && response.data.data ? response.data.data : response.data;
-        if (apiPostData && apiPostData.message) {
-          const aiMessage = apiPostData.message;
-          const fullText = this.getMessageText(aiMessage.content);
-          
-          // Add message with typing effect
-          aiMessage.isTyping = true;
-          aiMessage.displayText = '';
-          this.messages.push(aiMessage);
-          this.saveMessagesToStorage();
-          
-          // Start typing effect
-          this.$nextTick(() => {
-            this.simulateTyping(aiMessage, fullText);
-          });
-          
-          this.$toast.success('Web search completed!');
-        }
-      } catch (error) {
-        console.error('Web search error:', error);
-        this.$toast.error('Web search failed. Please try again.');
-      } finally {
-        this.loading = false;
-      }
-    },
+  this.loading = true;
+  
+  try {
+    // Get the user's original question from the conversation
+    const userMessages = this.messages.filter(m => m.role === 'user');
+    const lastUserMessage = userMessages[userMessages.length - 1];
+    
+    if (!lastUserMessage) {
+      this.$toast.error('Could not find your original question');
+      return;
+    }
+    
+    // Call the external search API directly
+    const response = await this.$http.secured.post('/external_search/search', {
+      query: lastUserMessage.content,
+      conversation_id: this.currentConversation.id
+    });
+    
+    // Add the web search result to messages
+    if (response.data.message) {
+      const aiMessage = response.data.message;
+      const fullText = this.getMessageText(aiMessage.content);
+      
+      // Add message with typing effect
+      aiMessage.isTyping = true;
+      aiMessage.displayText = '';
+      this.messages.push(aiMessage);
+      this.saveMessagesToStorage();
+      
+      // Start typing effect
+      this.$nextTick(() => {
+        this.simulateTyping(aiMessage, fullText);
+      });
+      
+      this.$toast.success('Web search completed!');
+    }
+    
+  } catch (error) {
+    console.error('External search error:', error);
+    
+    // Add error message to chat
+    this.messages.push({
+      id: Date.now(),
+      role: 'assistant',
+      content: {
+        answer: 'Sorry, I couldn\'t search the internet right now. Please try again later.',
+        citations: [],
+        needs_consent: false
+      },
+      source: 'web',
+      created_at: new Date().toISOString()
+    });
+    this.saveMessagesToStorage();
+    this.$toast.error('Web search failed');
+  } finally {
+    this.loading = false;
+  }
+},
 
     handleDenyWebSearch() {
       this.$toast.info('Web search cancelled. Please try asking a different question about the DPR documents.');
