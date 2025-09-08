@@ -21,6 +21,7 @@
     "html2pdf.js": "^0.10.3",
     "js-cookie": "^3.0.5",
     "jspdf": "^2.5.1",
+    "marked": "^4.3.0",
     "v-calendar": "^2.4.1",
     "vue": "^2.7.14",
     "vue-axios": "^3.5.2",

@@ -35,7 +35,7 @@
           <div class="message-content">
             <div class="message-text assistant-text" :class="{ 'typing-effect': message.isTyping }">
               <span v-if="message.isTyping" class="typing-text">{{ message.displayText }}</span>
-              <span v-else>{{ getMessageText(message.content) }}</span>
+              <div v-else v-html="getMessageText(message.content)" class="markdown-content"></div>
             </div>
             
             <!-- Copy Button for AI Messages -->
@@ -177,6 +177,8 @@
 </template>
 
 <script>
+import { marked } from 'marked'
+
 export default {
   name: 'Chat',
   props: {
@@ -327,15 +329,56 @@ export default {
     },
 
     getMessageText(content) {
+      let text = '';
+      
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          return parsed.answer || content;
+          text = parsed.answer || content;
         } catch (e) {
-          return content;
+          text = content;
         }
+      } else {
+        text = content.answer || '';
       }
-      return content.answer || '';
+      
+      // Debug: Log the text to see what we're working with
+      console.log('Original text:', text);
+      
+      
+      // Configure marked options for better rendering
+      const renderer = new marked.Renderer();
+      
+      // Custom table renderer to ensure proper spacing
+      renderer.table = function(header, body) {
+        return '<table class="markdown-table">\n<thead>\n' + header + '</thead>\n<tbody>\n' + body + '</tbody>\n</table>\n';
+      };
+      
+      renderer.tablerow = function(content) {
+        return '<tr>' + content + '</tr>\n';
+      };
+      
+      renderer.tablecell = function(content, flags) {
+        const type = flags.header ? 'th' : 'td';
+        const align = flags.align ? ' style="text-align:' + flags.align + '"' : '';
+        return '<' + type + align + '>' + content + '</' + type + '>';
+      };
+      
+      // Convert markdown to HTML with options
+      const html = marked(text, {
+        breaks: true, // Convert \n to <br>
+        gfm: true, // GitHub Flavored Markdown
+        tables: true, // Enable tables
+        sanitize: false, // Allow HTML (we trust our content)
+        smartLists: true,
+        smartypants: true,
+        renderer: renderer
+      });
+      
+      // Debug: Log the HTML output
+      console.log('Generated HTML:', html);
+      
+      return html;
     },
 
     getCitations(content) {
@@ -1456,6 +1499,301 @@ getCitationUrl(citation) {
 
 .dark-theme .message-input::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Markdown Content Styles */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: #2d333a;
+}
+
+.markdown-content h1 { font-size: 24px; }
+.markdown-content h2 { font-size: 20px; }
+.markdown-content h3 { font-size: 18px; }
+.markdown-content h4 { font-size: 16px; }
+
+.markdown-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+.markdown-content table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 16px 0 !important;
+  font-size: 14px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e5e5 !important;
+  background: #fff !important;
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 16px 20px !important;
+  text-align: left !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  border-right: 1px solid #e5e5e5 !important;
+  vertical-align: top !important;
+  background: #fff !important;
+}
+
+.markdown-content th:last-child,
+.markdown-content td:last-child {
+  border-right: none !important;
+}
+
+.markdown-content th {
+  background: #f8f9fa !important;
+  font-weight: 600 !important;
+  color: #2d333a !important;
+  border-bottom: 2px solid #d1d5db !important;
+  font-size: 14px !important;
+}
+
+.markdown-content td {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #2d333a !important;
+}
+
+/* Dark theme table styles */
+.dark-theme .markdown-content table {
+  background: #2d2d30 !important;
+  border-color: #4d4d4f !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-theme .markdown-content th,
+.dark-theme .markdown-content td {
+  border-color: #4d4d4f !important;
+  color: #e5e5e5 !important;
+  background: #2d2d30 !important;
+}
+
+.dark-theme .markdown-content th {
+  background: #3c3c3f !important;
+  color: #ffffff !important;
+  border-bottom-color: #6b7280 !important;
+}
+
+.dark-theme .markdown-content tr:hover {
+  background: #3c3c3f !important;
+}
+
+.markdown-content tr:hover {
+  background: #f8f9fa !important;
+}
+
+/* More specific selectors to override any conflicting styles */
+.chat-component .message-content .markdown-content table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 16px 0 !important;
+  font-size: 14px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e5e5 !important;
+  background: #fff !important;
+}
+
+.chat-component .message-content .markdown-content th,
+.chat-component .message-content .markdown-content td {
+  padding: 16px 20px !important;
+  text-align: left !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  border-right: 1px solid #e5e5e5 !important;
+  vertical-align: top !important;
+  background: #fff !important;
+  color: #2d333a !important;
+}
+
+.chat-component .message-content .markdown-content th:last-child,
+.chat-component .message-content .markdown-content td:last-child {
+  border-right: none !important;
+}
+
+.chat-component .message-content .markdown-content th {
+  background: #f8f9fa !important;
+  font-weight: 600 !important;
+  color: #2d333a !important;
+  border-bottom: 2px solid #d1d5db !important;
+  font-size: 14px !important;
+}
+
+/* Custom markdown table class */
+.markdown-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 16px 0 !important;
+  font-size: 14px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e5e5 !important;
+  background: #fff !important;
+}
+
+.markdown-table th,
+.markdown-table td {
+  padding: 16px 20px !important;
+  text-align: left !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  border-right: 1px solid #e5e5e5 !important;
+  vertical-align: top !important;
+  background: #fff !important;
+  color: #2d333a !important;
+}
+
+.markdown-table th:last-child,
+.markdown-table td:last-child {
+  border-right: none !important;
+}
+
+.markdown-table th {
+  background: #f8f9fa !important;
+  font-weight: 600 !important;
+  color: #2d333a !important;
+  border-bottom: 2px solid #d1d5db !important;
+  font-size: 14px !important;
+}
+
+.markdown-table tr:hover {
+  background: #f8f9fa !important;
+}
+
+.markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: #2d333a;
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: #565869;
+}
+
+.markdown-content code {
+  background: #f1f3f4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: #d73a49;
+}
+
+.markdown-content pre {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid #e5e5e5;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+  color: #2d333a;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #10a37f;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: #565869;
+  font-style: italic;
+}
+
+.markdown-content hr {
+  border: none;
+  height: 1px;
+  background: #e5e5e5;
+  margin: 24px 0;
+}
+
+/* Dark theme markdown styles */
+.dark-theme .markdown-content h1,
+.dark-theme .markdown-content h2,
+.dark-theme .markdown-content h3,
+.dark-theme .markdown-content h4,
+.dark-theme .markdown-content h5,
+.dark-theme .markdown-content h6 {
+  color: #ffffff;
+}
+
+.dark-theme .markdown-content th {
+  background: #2d2d30;
+  color: #ffffff;
+  border-bottom: 2px solid #4d4d4f;
+}
+
+.dark-theme .markdown-content th,
+.dark-theme .markdown-content td {
+  border-bottom: 1px solid #4d4d4f;
+}
+
+.dark-theme .markdown-content tr:hover {
+  background: #2d2d30;
+}
+
+.dark-theme .markdown-content strong {
+  color: #ffffff;
+}
+
+.dark-theme .markdown-content em {
+  color: #d1d5db;
+}
+
+.dark-theme .markdown-content code {
+  background: #374151;
+  color: #fbbf24;
+}
+
+.dark-theme .markdown-content pre {
+  background: #1f2937;
+  border: 1px solid #4d4d4f;
+}
+
+.dark-theme .markdown-content pre code {
+  color: #ffffff;
+}
+
+.dark-theme .markdown-content blockquote {
+  border-left: 4px solid #10a37f;
+  color: #d1d5db;
+}
+
+.dark-theme .markdown-content hr {
+  background: #4d4d4f;
 }
 
 .dark-theme .assistant-avatar {
