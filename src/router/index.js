@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Home from '../components/Home.vue'
 import Signin from '../components/Signin.vue'
 import Dashboard from '../components/Dashboard.vue'
+import ChecklistAnalyzer from '../components/ChecklistAnalyzer.vue'
 
 
 Vue.use(Router)
@@ -20,6 +21,12 @@ const router = new Router({
       path: '/dashboard',
       name: 'Dashboard',
       component: Dashboard,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/checklist',
+      name: 'ChecklistAnalyzer',
+      component: ChecklistAnalyzer,
       meta: { requiresAuth: true }
     },
     {

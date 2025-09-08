@@ -128,6 +128,10 @@
       <div class="main-header">
         <h1>DPR Chatbot</h1>
         <div class="header-info">
+          <span class="document-count">{{ documents.length }} DPR Documents</span>
+          <button class="btn-checklist" @click="$router.push('/checklist')" title="Checklist Analyzer">
+            Checklist
+          </button>
           <!-- Theme Toggle Button -->
           <div class="theme-toggle-container">
             <button @click="toggleTheme" class="theme-toggle-btn" :class="{ 'dark': isDarkTheme }">
@@ -1353,6 +1357,19 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   background: #f1f1f1;
   padding: 4px 8px;
   border-radius: 12px;
+}
+
+.btn-checklist {
+  background: #10a37f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.btn-checklist:hover {
+  background: #0d8f68;
 }
 
 .chat-container {
