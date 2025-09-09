@@ -50,9 +50,11 @@
           @click="selectConversation(conversation.id)"
         >
           <div class="conversation-content">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+            <div class="conversation-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
             <span v-if="!sidebarCollapsed" class="conversation-title">
               {{ conversation.title || `Chat ${conversation.id}` }}
             </span>
@@ -917,8 +919,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 /* Sidebar Styles */
 .sidebar {
   width: 260px;
-  background: #181818;
-  color: white;
+  background: #D0D0D0;
+  color: #333;
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease, background-color 0.3s ease;
@@ -926,10 +928,84 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .dark-theme .sidebar {
   background: #181818;
+  color: white;
 }
 
 .dark-theme .sidebar-collapsed {
   background: #181818;
+}
+
+.dark-theme .sidebar-header {
+  border-bottom: 1px solid #2d2d30;
+}
+
+.dark-theme .collapse-btn {
+  color: #8e8ea0;
+}
+
+.dark-theme .collapse-btn:hover {
+  background: #2d2d30;
+  color: white;
+}
+
+.dark-theme .new-chat-btn {
+  color: white;
+}
+
+.dark-theme .new-chat-btn:hover {
+  background: #2d2d30;
+}
+
+.dark-theme .previous-chats-heading h3 {
+  color: #8e8ea0;
+}
+
+.dark-theme .conversation-item:hover {
+  background: #2d2d30;
+}
+
+.dark-theme .conversation-item.active {
+  background: #343541;
+}
+
+.dark-theme .rename-btn,
+.dark-theme .delete-btn {
+  color: #8e8ea0;
+}
+
+.dark-theme .sidebar-footer {
+  border-top: 1px solid #2d2d30;
+}
+
+.dark-theme .user-menu:hover {
+  background: #2d2d30;
+}
+
+.dark-theme .user-role {
+  color: #8e8ea0;
+}
+
+.dark-theme .logout-btn {
+  color: #8e8ea0;
+}
+
+.dark-theme .user-dropdown {
+  background: #2d2d30;
+  border: 1px solid #4d4d4f;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .dropdown-item {
+  color: white;
+  border-bottom: 1px solid #4d4d4f;
+}
+
+.dark-theme .dropdown-item:hover {
+  background: #343541;
+}
+
+.dark-theme .conversations-list::-webkit-scrollbar-thumb {
+  background: #4d4d4f;
 }
 
 .sidebar-collapsed {
@@ -939,7 +1015,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 /* Updated Sidebar Header Styles */
 .sidebar-header {
   padding: 12px;
-  border-bottom: 1px solid #2d2d30;
+  border-bottom: 1px solid #B0B0B0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -964,7 +1040,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .collapse-btn {
   background: transparent;
   border: none;
-  color: #8e8ea0;
+  color: #666;
   padding: 8px;
   border-radius: 4px;
   cursor: pointer;
@@ -975,8 +1051,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .collapse-btn:hover {
-  background: #2d2d30;
-  color: white;
+  background: #B8B8B8;
+  color: #333;
 }
 
 .logo-icon {
@@ -1038,7 +1114,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   width: calc(100% - 16px);
   background: transparent;
   border: none;
-  color: white;
+  color: #333;
   padding: 12px;
   margin: 2px 8px;
   border-radius: 6px;
@@ -1051,7 +1127,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .new-chat-btn:hover {
-  background: #2d2d30;
+  background: #B8B8B8;
 }
 
 /* Previous Chats Heading */
@@ -1062,7 +1138,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .previous-chats-heading h3 {
   font-size: 12px;
   font-weight: 600;
-  color: #8e8ea0;
+  color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
@@ -1087,11 +1163,11 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .conversation-item:hover {
-  background: #2d2d30;
+  background: #B8B8B8;
 }
 
 .conversation-item.active {
-  background: #343541;
+  background: #A0A0A0;
 }
 
 .conversation-content {
@@ -1100,6 +1176,15 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+
+.conversation-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .conversation-title {
@@ -1116,7 +1201,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .rename-btn {
   background: transparent;
   border: none;
-  color: #8e8ea0;
+  color: #666;
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
@@ -1130,7 +1215,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .delete-btn {
   background: transparent;
   border: none;
-  color: #8e8ea0;
+  color: #666;
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
@@ -1143,7 +1228,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .sidebar-footer {
   padding: 12px;
-  border-top: 1px solid #2d2d30;
+  border-top: 1px solid #B0B0B0;
   position: relative;
 }
 
@@ -1158,7 +1243,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .user-menu:hover {
-  background: #2d2d30;
+  background: #B8B8B8;
 }
 
 .user-info {
@@ -1195,13 +1280,13 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .user-role {
   font-size: 12px;
-  color: #8e8ea0;
+  color: #666;
 }
 
 .logout-btn {
   background: transparent;
   border: none;
-  color: #8e8ea0;
+  color: #666;
   padding: 8px;
   border-radius: 4px;
   cursor: pointer;
@@ -1214,10 +1299,10 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   bottom: 100%;
   left: 12px;
   right: 12px;
-  background: #2d2d30;
-  border: 1px solid #4d4d4f;
+  background: #E0E0E0;
+  border: 1px solid #B0B0B0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   margin-bottom: 8px;
 }
@@ -1227,10 +1312,10 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  color: white;
+  color: #333;
   cursor: pointer;
   transition: background 0.2s ease;
-  border-bottom: 1px solid #4d4d4f;
+  border-bottom: 1px solid #B0B0B0;
 }
 
 .dropdown-item:last-child {
@@ -1238,7 +1323,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .dropdown-item:hover {
-  background: #343541;
+  background: #C8C8C8;
 }
 
 .dropdown-item.active {
@@ -1268,7 +1353,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .main-header {
-  background: white;
+  background: #f7f7f8;
   padding: 12px 20px;
   display: flex;
   align-items: center;
@@ -1577,7 +1662,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .conversations-list::-webkit-scrollbar-thumb {
-  background: #4d4d4f;
+  background: #B0B0B0;
   border-radius: 3px;
 }
 

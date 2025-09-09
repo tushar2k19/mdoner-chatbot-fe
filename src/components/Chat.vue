@@ -122,7 +122,7 @@
 
     <!-- Greeting -->
     <div v-if="messages.length === 0" class="greeting-text">
-      <p>Hello sir, what can I do for you?</p>
+      <p class="greeting-subtitle">What can I help you with?</p>
     </div>
 
 
@@ -158,6 +158,7 @@
 
     <!-- Sample Questions -->
     <div v-if="messages.length === 0" class="sample-questions">
+      <h3 class="sample-questions-title">Try asking</h3>
       <div class="question-grid">
         <button @click="askSampleQuestion('What are the environmental impact mitigation measures?')" class="sample-question-btn">
           🌿 What are the environmental impact mitigation measures?
@@ -212,6 +213,19 @@ export default {
     return {
       newMessage: '',
       isLoading: false
+    }
+  },
+
+  computed: {
+    timeBasedGreeting() {
+      const hour = new Date().getHours();
+      if (hour < 12) {
+        return 'GOOD MORNING';
+      } else if (hour < 17) {
+        return 'GOOD AFTERNOON';
+      } else {
+        return 'GOOD EVENING';
+      }
     }
   },
 
@@ -327,15 +341,77 @@ export default {
     },
 
     getMessageText(content) {
+      let text = '';
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          return parsed.answer || content;
+          text = parsed.answer || content;
         } catch (e) {
-          return content;
+          text = content;
         }
+      } else {
+        text = content.answer || '';
       }
-      return content.answer || '';
+      
+      // Process the text to add line breaks between separate answers
+      return this.formatMultipleAnswers(text);
+    },
+
+    formatMultipleAnswers(text) {
+      if (!text || typeof text !== 'string') {
+        return text;
+      }
+
+      let formattedText = text;
+
+      // First, handle explicit question numbers and bullet points
+      formattedText = formattedText.replace(/(\d+\.\s)/g, '\n$1');
+      formattedText = formattedText.replace(/(•\s)/g, '\n$1');
+      formattedText = formattedText.replace(/(-\s)/g, '\n$1');
+      formattedText = formattedText.replace(/(\*\s)/g, '\n$1');
+
+      // Handle transition phrases that often indicate new answers
+      const transitionPhrases = [
+        'Regarding', 'As for', 'Concerning', 'With respect to', 
+        'In terms of', 'When it comes to', 'For the', 'The',
+        'About', 'Regarding the', 'As for the', 'Concerning the',
+        'With respect to the', 'In terms of the', 'When it comes to the'
+      ];
+
+      transitionPhrases.forEach(phrase => {
+        const regex = new RegExp(`(\\.\\s${phrase}\\s)`, 'gi');
+        formattedText = formattedText.replace(regex, '\n$1');
+      });
+
+      // Handle sentences that start with "The" after a period (likely new answers)
+      formattedText = formattedText.replace(/(\.\sThe\s)/g, '\n$1');
+
+      // Handle common question patterns that might indicate new answers
+      const questionPatterns = [
+        /(\.\sWhat\s)/gi,
+        /(\.\sHow\s)/gi,
+        /(\.\sWhere\s)/gi,
+        /(\.\sWhen\s)/gi,
+        /(\.\sWhy\s)/gi,
+        /(\.\sWhich\s)/gi,
+        /(\.\sWho\s)/gi
+      ];
+
+      questionPatterns.forEach(pattern => {
+        formattedText = formattedText.replace(pattern, '\n$1');
+      });
+
+      // Handle sentences that start with capital letters after periods (potential new answers)
+      // But be careful not to break normal sentence flow
+      formattedText = formattedText.replace(/(\.\s)([A-Z][a-z]+(?:\s+[a-z]+)*\s+(?:is|are|was|were|has|have|had|will|would|can|could|should|may|might)\s)/g, '\n$1$2');
+
+      // Clean up multiple consecutive line breaks
+      formattedText = formattedText.replace(/\n{3,}/g, '\n');
+
+      // Remove line breaks at the beginning
+      formattedText = formattedText.replace(/^\n+/, '');
+
+      return formattedText;
     },
 
     getCitations(content) {
@@ -565,13 +641,14 @@ getCitationUrl(citation) {
 }
 
 @keyframes gradientShift {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
+  0% {
+    background-position: 0% 50%;
   }
   50% {
-    opacity: 0.5;
-    transform: scale(1.1);
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -702,6 +779,7 @@ getCitationUrl(citation) {
   padding: 0;
   font-size: 17px;
   line-height: 1.6;
+  white-space: pre-line; /* This preserves line breaks and wraps text */
 }
 
 /* Message Actions */
@@ -948,31 +1026,56 @@ getCitationUrl(citation) {
 .greeting-text {
   text-align: center;
   margin: 40px auto 20px auto;
-  max-width: 600px;
+  max-width: 100%;
   padding: 0 20px;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .greeting-text p {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 700;
   color: #2d333a;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.05);
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.greeting-subtitle {
+  font-size: 20px;
+  font-weight: 500;
+  color: #565869;
   margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  letter-spacing: 0.3px;
 }
 
 /* Sample Questions */
 .sample-questions {
-  position: absolute;
-  left: 50%;
-  bottom: 120px;
-  transform: translateX(-50%);
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
   max-width: 600px;
   width: 100%;
+  margin: 10px auto 0 auto;
   animation: fadeInUp 0.8s ease-out;
   z-index: 2;
   padding: 0 20px;
   box-sizing: border-box;
+}
+
+.sample-questions-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d333a;
+  margin: 0 0 16px 0;
+  text-align: center;
 }
 
 @keyframes fadeInUp {
@@ -1064,6 +1167,7 @@ getCitationUrl(citation) {
   display: flex;
   justify-content: center;
   box-sizing: border-box;
+  margin-top: 10px;
 }
 
 
@@ -1308,6 +1412,7 @@ getCitationUrl(citation) {
   border: none;
   color: white;
   font-size: 17px;
+  white-space: pre-line; /* This preserves line breaks and wraps text */
 }
 
 .dark-theme .copy-btn {
@@ -1493,6 +1598,16 @@ getCitationUrl(citation) {
 
 .dark-theme .greeting-text p {
   color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .greeting-subtitle {
+  color: #d1d5db;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .sample-questions-title {
+  color: white;
 }
 
 .dark-theme .sample-question-btn {
@@ -1530,14 +1645,16 @@ getCitationUrl(citation) {
   }
   
   .sample-questions {
-    left: 50%;
-    bottom: 100px;
+    position: relative;
+    left: auto;
+    bottom: auto;
     max-width: 90%;
-    transform: translateX(-50%);
+    margin: 20px auto 0 auto;
+    transform: none;
   }
   
-  .sample-questions h3 {
-    font-size: 20px;
+  .sample-questions-title {
+    font-size: 16px;
   }
   
   .sample-question-btn {
