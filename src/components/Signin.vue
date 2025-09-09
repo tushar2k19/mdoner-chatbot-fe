@@ -2,6 +2,17 @@
   <div class="login-page">
     <!-- Left Side - Mandala Animation -->
     <div class="mandala-section">
+      <!-- Floating Background Elements for Left Side -->
+      <div class="floating-shapes-left">
+        <div class="shape-left shape-left-1"></div>
+        <div class="shape-left shape-left-2"></div>
+        <div class="shape-left shape-left-3"></div>
+        <div class="shape-left shape-left-4"></div>
+        <div class="shape-left shape-left-5"></div>
+        <div class="shape-left shape-left-6"></div>
+        <div class="shape-left shape-left-7"></div>
+        <div class="shape-left shape-left-8"></div>
+      </div>
       <!-- Complex Corner Designs inspired by the image -->
       <div class="corner-design top-left">
         <svg viewBox="0 0 300 300" class="corner-svg">
@@ -580,13 +591,19 @@
 
     <!-- Right Side - Login Form -->
     <div class="login-section">
+      <!-- Floating Background Elements -->
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="shape shape-5"></div>
+      </div>
       <!-- Logo Section -->
       <div class="logo-container">
-        <div class="logo-icon">
-          <svg class="logo-svg" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-        </div>
+          <div class="logo-icon">
+            <img src="@/assets/logo.png" alt="Logo" class="logo-image" />
+          </div>
         <div class="ministry-text">
           <p class="ministry-label">MINISTRY OF DEVELOPMENT OF</p>
           <p class="ministry-title">
@@ -626,6 +643,11 @@
           </div>
 
           <div class="input-group">
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </span>
             <input
               :type="showPassword ? 'text' : 'password'"
               v-model="password"
@@ -761,24 +783,75 @@ export default {
 }
 </script>
 
+<style>
+/* Global styles to remove scrollbars */
+html, body {
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  box-sizing: border-box !important;
+}
+</style>
+
 <style scoped>
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
   width: 100vw;
   display: flex;
   font-family: system-ui, -apple-system, sans-serif;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Left Side - Mandala with Enhanced Corner Designs */
 .mandala-section {
   width: 50%;
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: linear-gradient(-45deg, #0a0a0a, #111827, #1f2937, #374151, #1e1b4b, #312e81, #1e3a8a, #1e40af);
+  background-size: 400% 400%;
+  animation: gradientShiftLeft 8s ease infinite;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+}
+
+.mandala-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(circle at 35% 65%, rgba(255, 255, 255, 0.11) 2px, transparent 2px),
+    radial-gradient(circle at 65% 35%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 25% 75%, rgba(255, 255, 255, 0.09) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 75% 15%, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    radial-gradient(circle at 45% 85%, rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 5% 45%, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 60px 60px, 100px 100px, 80px 80px, 120px 120px, 70px 70px, 90px 90px, 110px 110px, 85px 85px;
+  animation: floatLeft 18s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mandala-section::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+  animation: waveLeft 20s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* Enhanced Corner Designs */
@@ -882,37 +955,367 @@ export default {
 /* Right Side - Login Form */
 .login-section {
   width: 50%;
-  background-color: #F97B22;
+  background: linear-gradient(-45deg, #F97B22, #FF8C42, #FFB366, #FFD93D);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
   position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-height: 100vh;
+}
+
+.login-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.25) 3px, transparent 3px),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.2) 2px, transparent 2px),
+    radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.22) 2.5px, transparent 2.5px),
+    radial-gradient(circle at 60% 30%, rgba(255, 255, 255, 0.18) 2px, transparent 2px),
+    radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.2) 2px, transparent 2px);
+  background-size: 50px 50px, 80px 80px, 70px 70px, 100px 100px, 75px 75px;
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.login-section::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at 10% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+  animation: wave 25s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-15px) rotate(2deg); }
+  66% { transform: translateY(8px) rotate(-1deg); }
+}
+
+@keyframes floatLeft {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-12px) rotate(1deg); }
+  50% { transform: translateY(6px) rotate(-1deg); }
+  75% { transform: translateY(-8px) rotate(0.5deg); }
+}
+
+@keyframes waveLeft {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 0.3;
+  }
+  25% { 
+    transform: scale(1.1) rotate(1deg);
+    opacity: 0.5;
+  }
+  50% { 
+    transform: scale(0.9) rotate(-1deg);
+    opacity: 0.4;
+  }
+  75% { 
+    transform: scale(1.05) rotate(0.5deg);
+    opacity: 0.6;
+  }
+}
+
+@keyframes wave {
+  0%, 100% { 
+    transform: translateX(0px) translateY(0px) scale(1);
+    opacity: 0.3;
+  }
+  25% { 
+    transform: translateX(-20px) translateY(-10px) scale(1.1);
+    opacity: 0.5;
+  }
+  50% { 
+    transform: translateX(10px) translateY(-5px) scale(0.9);
+    opacity: 0.4;
+  }
+  75% { 
+    transform: translateX(-5px) translateY(5px) scale(1.05);
+    opacity: 0.6;
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradientShiftLeft {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Floating Background Shapes */
+.floating-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(3px);
+  animation: floatShape 20s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.shape-1 {
+  width: 80px;
+  height: 80px;
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 25s;
+}
+
+.shape-2 {
+  width: 60px;
+  height: 60px;
+  top: 60%;
+  right: 15%;
+  animation-delay: -5s;
+  animation-duration: 30s;
+}
+
+.shape-3 {
+  width: 100px;
+  height: 100px;
+  top: 40%;
+  left: 80%;
+  animation-delay: -10s;
+  animation-duration: 35s;
+}
+
+.shape-4 {
+  width: 50px;
+  height: 50px;
+  top: 80%;
+  left: 20%;
+  animation-delay: -15s;
+  animation-duration: 20s;
+}
+
+.shape-5 {
+  width: 70px;
+  height: 70px;
+  top: 10%;
+  right: 30%;
+  animation-delay: -8s;
+  animation-duration: 28s;
+}
+
+@keyframes floatShape {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateY(-30px) translateX(20px) rotate(90deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-15px) rotate(180deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-25px) translateX(10px) rotate(270deg);
+    opacity: 0.9;
+  }
+}
+
+/* Floating Background Shapes for Left Side */
+.floating-shapes-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shape-left {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(3px);
+  animation: floatShapeLeft 15s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+}
+
+.shape-left-1 {
+  width: 60px;
+  height: 60px;
+  top: 15%;
+  left: 15%;
+  animation-delay: 0s;
+  animation-duration: 20s;
+}
+
+.shape-left-2 {
+  width: 40px;
+  height: 40px;
+  top: 70%;
+  right: 20%;
+  animation-delay: -6s;
+  animation-duration: 25s;
+}
+
+.shape-left-3 {
+  width: 80px;
+  height: 80px;
+  top: 45%;
+  left: 75%;
+  animation-delay: -12s;
+  animation-duration: 22s;
+}
+
+.shape-left-4 {
+  width: 35px;
+  height: 35px;
+  top: 25%;
+  right: 10%;
+  animation-delay: -3s;
+  animation-duration: 18s;
+}
+
+.shape-left-5 {
+  width: 50px;
+  height: 50px;
+  top: 60%;
+  left: 10%;
+  animation-delay: -8s;
+  animation-duration: 24s;
+}
+
+.shape-left-6 {
+  width: 45px;
+  height: 45px;
+  top: 35%;
+  right: 40%;
+  animation-delay: -15s;
+  animation-duration: 20s;
+}
+
+.shape-left-7 {
+  width: 70px;
+  height: 70px;
+  top: 80%;
+  left: 50%;
+  animation-delay: -10s;
+  animation-duration: 26s;
+}
+
+.shape-left-8 {
+  width: 30px;
+  height: 30px;
+  top: 10%;
+  left: 40%;
+  animation-delay: -5s;
+  animation-duration: 16s;
+}
+
+@keyframes floatShapeLeft {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.4;
+  }
+  12.5% {
+    transform: translateY(-25px) translateX(20px) rotate(45deg) scale(1.1);
+    opacity: 0.7;
+  }
+  25% {
+    transform: translateY(-15px) translateX(10px) rotate(90deg) scale(0.9);
+    opacity: 0.5;
+  }
+  37.5% {
+    transform: translateY(-30px) translateX(-15px) rotate(135deg) scale(1.2);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-20px) rotate(180deg) scale(0.8);
+    opacity: 0.6;
+  }
+  62.5% {
+    transform: translateY(-20px) translateX(-5px) rotate(225deg) scale(1.1);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translateY(-25px) translateX(12px) rotate(270deg) scale(0.9);
+    opacity: 0.5;
+  }
+  87.5% {
+    transform: translateY(-5px) translateX(18px) rotate(315deg) scale(1.3);
+    opacity: 0.9;
+  }
 }
 
 .logo-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
+  margin-top: -3rem;
+  animation: logoEntrance 1s ease-out 0.3s both;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes logoEntrance {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .logo-icon {
-  width: 4rem;
-  height: 4rem;
-  background-color: white;
+  width: 6rem;
+  height: 6rem;
+  background-color: transparent;
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-.logo-svg {
-  width: 2.5rem;
-  height: 2.5rem;
-  color: #F97B22;
+.logo-image {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  background-color: transparent;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
 }
 
 .ministry-text {
@@ -945,12 +1348,40 @@ export default {
 
 .form-container {
   width: 100%;
-  max-width: 24rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 1.5rem 1.5rem 2rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: slideInFromRight 0.8s ease-out;
+  box-sizing: border-box;
+  max-height: 70vh;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .form-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
+  margin-top: 0rem;
 }
 
 .login-title {
@@ -978,11 +1409,32 @@ export default {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.375rem;
+  width: 100%;
 }
 
 .input-group {
   position: relative;
+  margin-bottom: 0.375rem;
+}
+
+.input-group.focused .floating-label {
+  transform: translateY(-1.5rem) scale(0.85);
+  color: #10B981;
+}
+
+.floating-label {
+  position: absolute;
+  left: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  background: transparent;
+  padding: 0 0.25rem;
+  z-index: 1;
 }
 
 .input-icon {
@@ -992,27 +1444,45 @@ export default {
   transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.7);
   pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon {
   width: 1.25rem;
   height: 1.25rem;
+  filter: brightness(0) invert(1);
+  display: block;
 }
 
 .form-input {
   width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  background-color: rgba(255, 255, 255, 0.2);
+  padding: 0.875rem 2.5rem 0.875rem 2.5rem;
+  background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   color: white;
   font-size: 1rem;
   transition: all 0.3s ease;
+  box-sizing: border-box;
+  backdrop-filter: blur(5px);
+  min-height: 3rem;
+}
+
+.form-input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 20px rgba(16, 185, 129, 0.1);
+  transform: translateY(-2px);
 }
 
 /* Password input with icon on the right */
 .password-input {
-  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  padding: 0.875rem 2.5rem 0.875rem 2.5rem;
+  text-indent: 0;
 }
 
 .form-input::placeholder {
@@ -1032,7 +1502,7 @@ export default {
 
 .password-toggle {
   position: absolute;
-  right: 0.75rem;
+  right: 0.125rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -1040,6 +1510,20 @@ export default {
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   padding: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.password-toggle:hover {
+  color: rgba(255, 255, 255, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.password-toggle .icon {
+  transition: transform 0.3s ease;
+}
+
+.password-toggle:active .icon {
+  transform: rotate(180deg);
 }
 
 .forgot-password {
@@ -1050,32 +1534,65 @@ export default {
   color: white;
   font-size: 0.875rem;
   text-decoration: none;
-  transition: opacity 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.forgot-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: white;
+  transition: width 0.3s ease;
+}
+
+.forgot-link:hover::after {
+  width: 100%;
 }
 
 .forgot-link:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+  opacity: 0.9;
 }
 
 .login-button {
   width: 100%;
-  padding: 1rem 1.5rem; /* Increased padding for longer button */
-  background-color: #065F46; /* Dark green color */
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #065F46, #047857);
   color: white;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 1.125rem; /* Increased font size */
+  border-radius: 0.75rem;
+  font-size: 1.125rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  min-height: 3.5rem; /* Increased height */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(6, 95, 70, 0.3);
+  min-height: 3.5rem;
+  margin-top: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-button:hover::before {
+  left: 100%;
 }
 
 .login-button:hover {
-  background-color: #047857; /* Darker green on hover */
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(6, 95, 70, 0.4);
 }
 
 .login-button:focus {
