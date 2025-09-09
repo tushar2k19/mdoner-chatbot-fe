@@ -34,7 +34,7 @@
           </div>
           <div class="message-content">
             <div class="message-text assistant-text" :class="{ 'typing-effect': message.isTyping }">
-              <span v-if="message.isTyping" class="typing-text">{{ message.displayText }}</span>
+              <span v-if="message.isTyping" class="typing-text" v-html="message.displayText"></span>
               <div v-else v-html="getMessageText(message.content)" class="markdown-content"></div>
             </div>
             
@@ -908,11 +908,79 @@ getCitationUrl(citation) {
   position: relative;
 }
 
+.typing-text {
+  /* Ensure HTML content renders properly during typing */
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
 .typing-text::after {
   content: '|';
   animation: blink 1s infinite;
   color: #10a37f;
   font-weight: bold;
+}
+
+/* Ensure typing text has same styling as markdown content */
+.typing-text h1,
+.typing-text h2,
+.typing-text h3,
+.typing-text h4,
+.typing-text h5,
+.typing-text h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: #2d333a;
+}
+
+.typing-text p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.typing-text strong {
+  font-weight: 600;
+  color: #2d333a;
+}
+
+.typing-text em {
+  font-style: italic;
+  color: #656d76;
+}
+
+.typing-text ul,
+.typing-text ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.typing-text li {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.typing-text code {
+  background: #f6f8fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+  color: #d73a49;
+}
+
+.typing-text pre {
+  background: #f6f8fa;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid #e1e4e8;
+}
+
+.typing-text pre code {
+  background: none;
+  padding: 0;
+  color: #24292e;
 }
 
 @keyframes blink {

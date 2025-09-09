@@ -385,9 +385,9 @@ export default {
         this.updateBackendHealth(status.isHealthy);
         
         if (status.isHealthy) {
-          this.$toast.success('Backend health check passed!');
+          // this.$toast.success('Backend health check passed!');
         } else {
-          this.$toast.error('Backend health check failed!');
+          // this.$toast.error('Backend health check failed!');
         }
       } catch (error) {
         console.error('Backend health test failed:', error);
@@ -703,18 +703,171 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       return content.answer || '';
     },
 
-    // Typing effect for AI responses
+    // Enhanced typing effect with pre-processed markdown
     async simulateTyping(message, fullText) {
       message.isTyping = true;
-      message.displayText = '';
+      message.displayText = 'Processing response...';
       
-      for (let i = 0; i <= fullText.length; i++) {
-        message.displayText = fullText.substring(0, i);
-        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay between characters
+      // Small delay to show processing message
+      await new Promise(resolve => setTimeout(resolve, 0.01));
+      
+      // Pre-process markdown to HTML for readable typing effect
+      const processedHtml = this.preprocessMarkdown(fullText);
+      
+      // For very long responses (>800 chars), show instantly to avoid long delays
+      if (fullText.length > 5000) {
+        message.displayText = processedHtml;
+        message.isTyping = false;
+        return;
       }
       
+      // Smart HTML typing effect
+      await this.typeHtmlContent(message, processedHtml, fullText);
+      
       message.isTyping = false;
-      message.displayText = fullText;
+      message.displayText = processedHtml;
+    },
+
+    // Pre-process markdown to HTML for readable typing effect
+    preprocessMarkdown(text) {
+      if (!text || text.trim() === '') {
+        return '';
+      }
+      
+      // Import marked dynamically to avoid issues
+      const { marked } = require('marked');
+      
+      // Configure marked options for better rendering
+      const renderer = new marked.Renderer();
+      
+      // Custom table renderer to ensure proper spacing
+      renderer.table = function(header, body) {
+        return '<table class="markdown-table">\n<thead>\n' + header + '</thead>\n<tbody>\n' + body + '</tbody>\n</table>\n';
+      };
+      
+      renderer.tablerow = function(content) {
+        return '<tr>' + content + '</tr>\n';
+      };
+      
+      renderer.tablecell = function(content, flags) {
+        const type = flags.header ? 'th' : 'td';
+        const align = flags.align ? ' style="text-align:' + flags.align + '"' : '';
+        return '<' + type + align + '>' + content + '</' + type + '>';
+      };
+      
+      // Convert markdown to HTML with options
+      const html = marked(text, {
+        breaks: true, // Convert \n to <br>
+        gfm: true, // GitHub Flavored Markdown
+        tables: true, // Enable tables
+        sanitize: false, // Allow HTML (we trust our content)
+        smartLists: true,
+        smartypants: true,
+        renderer: renderer
+      });
+      
+      return html;
+    },
+
+    // Smart HTML typing effect that handles HTML tags gracefully
+    async typeHtmlContent(message, htmlContent, originalText) {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Extract text content for character counting
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      
+      // Calculate typing speed based on content length
+      const baseDelay = 15; // Base delay in ms
+      const maxDelay = 50; // Maximum delay for very short content
+      const delay = Math.min(maxDelay, Math.max(baseDelay, 1000 / (textContent.length / 10)));
+      
+      // Progressive typing with HTML awareness
+      let currentLength = 0;
+      const totalLength = textContent.length;
+      
+      while (currentLength < totalLength) {
+        // Calculate how much to show based on text content
+        const targetLength = Math.min(currentLength + 2, totalLength); // Type 2 characters at a time for smoothness
+        
+        // Get the substring of text content
+        const targetText = textContent.substring(0, targetLength);
+        
+        // Find the corresponding HTML position
+        const htmlToShow = this.getHtmlForTextLength(htmlContent, targetText);
+        
+        message.displayText = htmlToShow;
+        currentLength = targetLength;
+        
+        // Wait before next iteration
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    },
+
+    // Helper method to get HTML content up to a certain text length
+    getHtmlForTextLength(htmlContent, targetText) {
+      // For complex structures, use a simplified approach
+      if (htmlContent.includes('<table') || htmlContent.includes('<ul') || htmlContent.includes('<ol')) {
+        // For complex structures, show plain text during typing with basic formatting
+        return this.simplifyHtmlForTyping(targetText);
+      }
+      
+      // For simple content, try to preserve HTML structure
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const walker = document.createTreeWalker(
+          tempDiv,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let currentText = '';
+        let resultHtml = '';
+        
+        // Walk through text nodes and build result
+        const processNode = (node) => {
+          const nodeText = node.textContent;
+          const remainingLength = targetText.length - currentText.length;
+          
+          if (remainingLength <= 0) {
+            return;
+          }
+          
+          if (currentText.length + nodeText.length <= targetText.length) {
+            // Include the entire text node
+            currentText += nodeText;
+            resultHtml += nodeText;
+          } else {
+            // Include partial text node
+            const partialText = nodeText.substring(0, remainingLength);
+            currentText += partialText;
+            resultHtml += partialText;
+          }
+        };
+        
+        let node;
+        while (node = walker.nextNode()) {
+          processNode(node);
+          if (currentText.length >= targetText.length) {
+            break;
+          }
+        }
+        
+        return resultHtml;
+      } catch (error) {
+        // Fallback to simplified text
+        return this.simplifyHtmlForTyping(targetText);
+      }
+    },
+
+    // Simplify HTML for typing effect
+    simplifyHtmlForTyping(text) {
+      // Convert line breaks to <br> tags
+      return text.replace(/\n/g, '<br>');
     },
 
     // Generate conversation title from first message
@@ -761,9 +914,9 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     },
 
     async handleAllowWebSearch(message) {
-      alert("handled")
-  this.loading = true;
-  this.isWebSearchInProgress = true;
+      
+      this.loading = true;
+      this.isWebSearchInProgress = true;
   
   try {
     // Get the user's original question from the conversation
