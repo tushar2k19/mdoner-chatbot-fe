@@ -456,7 +456,7 @@ Authorization: Bearer <jwt_token>
     "role": "assistant",
     "content": {
       "answer": "Based on recent web search results and considering your work with Manipur and Meghalaya DPR projects, where you've been discussing project timelines and Phase 1 starting in Q1 2024, here's what I found about renewable energy developments...",
-      "citations": [
+      "citations": [image.png
         {
           "type": "url",
           "url": "https://example.com/article1",

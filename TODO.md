@@ -23,6 +23,8 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
 - Consent prompt for web search
 - Document citation chips under assistant replies (shows selected document)
 - Basic admin upload screen (optional)
+- **NEW: Checklist Analyzer component with world-class UI**
+- **NEW: Markdown rendering with tables and structured formatting**
 
 ### Backend (Rails API) ✅
 - Authentication (JWT-based)
@@ -30,6 +32,8 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
 - S3 integration for PDF storage and viewing (LOWER PRIORITY)
 - External search integration (Tavily/Perplexity)
 - MySQL database for users, conversations, messages
+- **NEW: Checklist analysis API endpoints**
+- **NEW: Document mapper service for OpenAI file ID management**
 
 ### OpenAI Setup (Completed)
 - ✅ One Assistant with `file_search` tool
@@ -39,6 +43,8 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
 - ✅ If no DPR answer: set `needs_consent = true`; frontend asks for web search consent
 - ✅ Model: gpt-4o-mini with temperature 0.1
 - ✅ JSON response format with answer, citations, needs_consent, message fields
+- **NEW: Enhanced instructions for structured markdown responses with tables**
+- **NEW: Function calling support for checklist analysis**
 
 ## Step-by-Step Implementation Plan
 
@@ -63,32 +69,38 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
 - [✅] **2.5**  Test assistant with sample queries
 - [✅] **2.6**  Verify JSON response format and citation handling
 - [✅] **2.7**  Document S3-based storage approach (no OCR needed)
+- [✅] **2.8** **NEW: Enhanced OpenAI instructions for structured responses**
+  - [✅] **2.8.1** Added mandatory markdown formatting requirements
+  - [✅] **2.8.2** Implemented structured response templates
+  - [✅] **2.8.3** Added table generation requirements
+  - [✅] **2.8.4** Increased response length to 300-400 words minimum
 
 ### Phase 3: Core Chatbot (HIGH PRIORITY)
 - [✅] **3.1** Create conversation system (no document selection needed)
   - [✅] **3.1.1** Create OpenAI Thread with access to all documents
   - [✅] **3.1.2** Store conversation metadata in database
-- [ ] **3.2** Build message handling (LLM searches all documents automatically)
-  - [ ] **3.2.2** Handle LLM clarification requests for specific documents
+- [✅] **3.2** Build message handling (LLM searches all documents automatically)
+  - [✅] **3.2.1** Implement OpenAI service with proper error handling
+  - [✅] **3.2.2** Handle LLM clarification requests for specific documents
   - [✅] **3.2.3** Implement automatic document relevance detection
 - [✅] **3.3** Extract and display document citations
-  - [ ] **3.3.1** Parse OpenAI response annotations
-  - [ ] **3.3.2** Map file_ids to document names
-  - [ ] **3.3.3** Display citation chips under responses
-- [ ] **3.4** Implement conversation history persistence
-- [ ] **3.5** Add session management (list, load, delete conversations)
-- [ ] **3.6** Add LLM clarification handling for document-specific queries
-- [ ] **3.7** Prepend prior web summary: when sending a query, if previous message `source === "web"`, include a 1–2 line summary of that web answer in the assistant request (for context continuity without contaminating DPR-only guardrails).
+  - [✅] **3.3.1** Parse OpenAI response annotations
+  - [✅] **3.3.2** Map file_ids to document names
+  - [✅] **3.3.3** Display citation chips under responses
+- [✅] **3.4** Implement conversation history persistence
+- [✅] **3.5** Add session management (list, load, delete conversations)
+- [✅] **3.6** Add LLM clarification handling for document-specific queries
+- [✅] **3.7** Prepend prior web summary: when sending a query, if previous message `source === "web"`, include a 1–2 line summary of that web answer in the assistant request (for context continuity without contaminating DPR-only guardrails).
 - [✅] **3.8** Create comprehensive models with relationships and validations
   - [✅] **3.8.1** User model with authentication helpers and statistics
   - [✅] **3.8.2** Document model with S3 integration and status management
   - [✅] **3.8.3** Conversation model with OpenAI thread integration
   - [✅] **3.8.4** Message model with JSON content parsing and citation handling
 - [✅] **3.9** Create comprehensive controller skeletons with implementation guide
-  - [] **3.9.1** ConversationsController with chat flow and streaming
-  - [] **3.9.2** MessagesController with pagination and citation handling
-  - [] **3.9.3** DocumentsController with S3 integration and admin functions
-  - [] **3.9.4** ExternalSearchController for web search fallback
+  - [✅] **3.9.1** ConversationsController with chat flow and streaming
+  - [✅] **3.9.2** MessagesController with pagination and citation handling
+  - [✅] **3.9.3** DocumentsController with S3 integration and admin functions
+  - [✅] **3.9.4** ExternalSearchController for web search fallback
 
 ### Phase 4: Streaming Implementation (CRITICAL )
 - [ ] **4.1** Implement streaming responses from OpenAI
@@ -102,24 +114,31 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
   - [ ] **4.2.3** Add loading states during streaming
 
 ### Phase 5: Frontend UI (HIGH PRIORITY)
-- [ ] **5.1** Build chat interface (messages, streaming)
-  - [ ] **5.1.1** Create message components (user/assistant)
-  - [ ] **5.1.2** Implement streaming text display
-  - [ ] **5.1.3** Add typing indicators and loading states
-- [ ] **5.2** Create session list sidebar
-  - [ ] **5.2.1** Display conversation history
-  - [ ] **5.2.2** Add new conversation button
-  - [ ] **5.2.3** Implement conversation switching
-- [ ] **5.3** Add consent modal for web search
-  - [ ] **5.3.1** Create modal component
-  - [ ] **5.3.2** Handle user consent flow
-- [ ] **5.4** Display document citations as chips
-  - [ ] **5.4.1** Create citation chip components
-  - [ ] **5.4.2** Style citation display
-- [ ] **5.5** Add loading states and error handling
-  - [ ] **5.5.1** Global loading indicators
-  - [ ] **5.5.2** Error message display
-  - [ ] **5.5.3** Retry mechanisms
+- [✅] **5.1** Build chat interface (messages, streaming)
+  - [✅] **5.1.1** Create message components (user/assistant)
+  - [✅] **5.1.2** Implement streaming text display
+  - [✅] **5.1.3** Add typing indicators and loading states
+  - [✅] **5.1.4** **NEW: Implement markdown rendering with tables**
+- [✅] **5.2** Create session list sidebar
+  - [✅] **5.2.1** Display conversation history
+  - [✅] **5.2.2** Add new conversation button
+  - [✅] **5.2.3** Implement conversation switching
+- [✅] **5.3** Add consent modal for web search
+  - [✅] **5.3.1** Create modal component
+  - [✅] **5.3.2** Handle user consent flow
+- [✅] **5.4** Display document citations as chips
+  - [✅] **5.4.1** Create citation chip components
+  - [✅] **5.4.2** Style citation display
+- [✅] **5.5** Add loading states and error handling
+  - [✅] **5.5.1** Global loading indicators
+  - [✅] **5.5.2** Error message display
+  - [✅] **5.5.3** Retry mechanisms
+- [✅] **5.6** **NEW: Implement Checklist Analyzer feature**
+  - [✅] **5.6.1** Create ChecklistAnalyzer.vue component
+  - [✅] **5.6.2** Implement world-class UI with dark/light theme
+  - [✅] **5.6.3** Add document selection and checklist management
+  - [✅] **5.6.4** Implement color-coded results table
+  - [✅] **5.6.5** Add responsive design and modern styling
 
 ### Phase 6: External Search (fallback)
 - [ ] **6.1** Implement consent prompt when no document match found
@@ -171,6 +190,10 @@ Note: We currently ingest 5 DPR PDFs. More can be added later without changing s
 
 ### Admin
 - `POST /api/admin/files` - Upload PDFs
+
+### **NEW: Checklist Analysis**
+- `GET /api/checklist/defaults` - Get default checklist items
+- `POST /api/checklist/analyze` - Analyze documents against checklist items
 
 ## Database Schema (MySQL)
 
@@ -241,7 +264,11 @@ S3_BUCKET_NAME=          # LOWER PRIORITY
 - [x] System design documentation completed
 - [x] API documentation completed
 - [x] Database schema documentation completed
-- [ ] Ready to start Phase 3 implementation (Core Chatbot)
+- [x] **NEW: Core chatbot functionality implemented**
+- [x] **NEW: Checklist analysis feature completed**
+- [x] **NEW: Enhanced OpenAI instructions for structured responses**
+- [x] **NEW: Markdown rendering with tables implemented**
+- [x] **NEW: World-class UI for checklist analyzer**
 
 ## Progress Log
 - 2025-08-22: Implemented baseline JWT Signin
@@ -268,6 +295,40 @@ S3_BUCKET_NAME=          # LOWER PRIORITY
   - Fixed discrepancies between documentation and actual assistant responses
   - Updated TODO.md to reflect current progress and correct priorities
 
+- **2025-01-XX: Core Chatbot Implementation (Completed)**
+  - Implemented complete chat interface with Vue.js 2
+  - Created Dashboard.vue with sidebar, conversation management, and chat area
+  - Implemented Chat.vue with message handling, citations, and consent flow
+  - Added authentication integration and user session management
+  - Implemented OpenAI service integration with proper error handling
+  - Added document citation display and management
+  - Created responsive design with dark/light theme support
+
+- **2025-01-XX: Checklist Analysis Feature (Completed)**
+  - Created comprehensive ChecklistAnalyzer.vue component
+  - Implemented backend API endpoints for checklist analysis
+  - Added OpenAI function calling for structured checklist responses
+  - Created document mapper service for file ID management
+  - Implemented world-class UI with color-coded results table
+  - Added dark/light theme support and responsive design
+  - Integrated with existing authentication and document system
+
+- **2025-01-XX: OpenAI Instructions Enhancement (Completed)**
+  - Updated OpenAI assistant instructions for structured responses
+  - Added mandatory markdown formatting requirements
+  - Implemented structured response templates with sections
+  - Added table generation requirements for data presentation
+  - Increased response length to 300-400 words minimum
+  - Enhanced formatting with headings, subheadings, and bullet points
+
+- **2025-01-XX: Markdown Rendering Implementation (Completed)**
+  - Integrated marked.js library for markdown rendering
+  - Implemented custom table rendering with proper spacing
+  - Added dark theme support for markdown content
+  - Created comprehensive CSS styling for tables and content
+  - Fixed compatibility issues with webpack 3 and marked.js 4.3.0
+  - Added debugging and testing capabilities for markdown rendering
+
 ## Notes
 - Document-level citations only (no page numbers required)
 - English language only
@@ -278,6 +339,7 @@ S3_BUCKET_NAME=          # LOWER PRIORITY
 - Assistant answers only from DPRs; if not found, returns `needs_consent: true`
 - Web answers (after consent) are kept separate from the OpenAI thread and marked `source = web`
 - When sending a new query, if the previous message has `source = web`, include a 1–2 line summary in the assistant request.
-- **HIGH PRIORITY**: Chatbot creation, assistant connection, streaming implementation, and UI
+- **HIGH PRIORITY**: Streaming implementation and external search integration
 - **LOWER PRIORITY**: S3 integration and PDF viewer (to be done after core chatbot is working)
+- **COMPLETED**: Core chatbot functionality, checklist analysis, markdown rendering, and enhanced UI
 - Streaming is a critical task that needs special attention as it's never been implemented before

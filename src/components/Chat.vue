@@ -227,6 +227,11 @@ export default {
             this.isLoading = false;
           }
         }
+        
+        // Scroll to bottom when messages change
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
       },
       deep: true
     }
@@ -330,21 +335,44 @@ export default {
 
     getMessageText(content) {
       let text = '';
+      let isConsentResponse = false;
       
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          text = parsed.answer || content;
+          // Check if this is a consent response
+          if (parsed.needs_consent === true) {
+            isConsentResponse = true;
+            text = parsed.message || 'Result not found, do you wish to search the internet?';
+          } else {
+            text = parsed.answer || '';
+          }
         } catch (e) {
           text = content;
         }
       } else {
-        text = content.answer || '';
+        // Check if this is a consent response
+        if (content.needs_consent === true) {
+          isConsentResponse = true;
+          text = content.message || 'Result not found, do you wish to search the internet?';
+        } else {
+          text = content.answer || '';
+        }
       }
       
       // Debug: Log the text to see what we're working with
       console.log('Original text:', text);
+      console.log('Is consent response:', isConsentResponse);
       
+      // If this is a consent response, return plain text (no markdown rendering)
+      if (isConsentResponse) {
+        return text;
+      }
+      
+      // If text is empty, return empty string (don't render markdown)
+      if (!text || text.trim() === '') {
+        return '';
+      }
       
       // Configure marked options for better rendering
       const renderer = new marked.Renderer();
@@ -401,35 +429,37 @@ export default {
         } catch (e) {
           return false;
         }
+      } else if (typeof content === 'object' && content !== null) {
+        // Check if needs_consent is explicitly true
+        if (content.needs_consent === true) {
+          return true;
+        }
+        
+        // Fallback: Check if the AI response indicates it can't find information
+        const answerText = content.answer || '';
+        const consentIndicators = [
+          'not found in the provided',
+          'cannot provide details',
+          'do not contain specific information',
+          'do not contain any specific information',
+          'no information available',
+          'cannot be answered from',
+          'outside the dpr domain',
+          'not available in the documents',
+          'uploaded documents do not contain',
+          'documents do not contain',
+          'cannot find information',
+          'no specific information about'
+        ];
+        
+        const needsConsentFallback = consentIndicators.some(indicator => 
+          answerText.toLowerCase().includes(indicator.toLowerCase())
+        );
+        
+        return content.needs_consent === true || needsConsentFallback;
       }
       
-      // Check if needs_consent is explicitly true
-      if (content.needs_consent === true) {
-        return true;
-      }
-      
-      // Fallback: Check if the AI response indicates it can't find information
-      const answerText = content.answer || '';
-      const consentIndicators = [
-        'not found in the provided',
-        'cannot provide details',
-        'do not contain specific information',
-        'do not contain any specific information',
-        'no information available',
-        'cannot be answered from',
-        'outside the dpr domain',
-        'not available in the documents',
-        'uploaded documents do not contain',
-        'documents do not contain',
-        'cannot find information',
-        'no specific information about'
-      ];
-      
-      const needsConsentFallback = consentIndicators.some(indicator => 
-        answerText.toLowerCase().includes(indicator.toLowerCase())
-      );
-      
-      return content.needs_consent === true || needsConsentFallback;
+      return false;
     },
 
     // Add these new methods after the needsConsent method:
@@ -437,11 +467,28 @@ export default {
 getCitationTitle(citation) {
   // Handle both string citations (from DPR) and object citations (from web search)
   if (typeof citation === 'string') {
-    return citation;
+    // Check if this is a file ID and convert to document name
+    return this.convertFileIdToDocumentName(citation);
   }
   
   // For web search citations, return the title
   return citation.title || 'Web Source';
+},
+
+convertFileIdToDocumentName(citation) {
+  // Document ID to name mapping (should match backend DocumentMapper)
+  const fileIdToNameMap = {
+    'file-GsjEvcukShCjxT1Gqx1dri': 'Nagaland Innovation Hub.pdf',
+    'file-WzxAXqwuUNpCHFwXLFkrbg': 'Mizoram Development of Helipads.pdf'
+  };
+  
+  // If it's a file ID, return the mapped name
+  if (fileIdToNameMap[citation]) {
+    return fileIdToNameMap[citation];
+  }
+  
+  // If it's already a document name or other format, return as-is
+  return citation;
 },
 
 getCitationUrl(citation) {
@@ -460,13 +507,26 @@ getCitationUrl(citation) {
       message.isTyping = true;
       message.displayText = '';
       
-      for (let i = 0; i <= fullText.length; i++) {
-        message.displayText = fullText.substring(0, i);
-        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay between characters
+      // For very long responses (>500 chars), show instantly
+      if (fullText.length > 500) {
+        message.displayText = fullText;
+        message.isTyping = false;
+        return;
       }
       
-      message.isTyping = false;
-      message.displayText = fullText;
+      // Use requestAnimationFrame for smooth, fast typing
+      const typeText = (index) => {
+        if (index <= fullText.length) {
+          message.displayText = fullText.substring(0, index);
+          requestAnimationFrame(() => typeText(index + 1));
+        } else {
+          message.isTyping = false;
+          message.displayText = fullText;
+        }
+      };
+      
+      // Start typing immediately
+      requestAnimationFrame(() => typeText(0));
     },
 
     // Copy message with user name appended
@@ -495,17 +555,6 @@ getCitationUrl(citation) {
     }
   },
 
-  watch: {
-    // Watch for new messages to scroll to bottom
-    messages: {
-      handler() {
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      },
-      deep: true
-    }
-  }
 }
 </script>
 
@@ -667,6 +716,10 @@ getCitationUrl(citation) {
   animation: messageSlideIn 0.6s ease-out forwards;
 }
 
+.assistant-message .message-wrapper {
+  animation: assistantMessageSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 @keyframes messageSlideIn {
   from {
     opacity: 0;
@@ -675,6 +728,17 @@ getCitationUrl(citation) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes assistantMessageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -708,9 +772,20 @@ getCitationUrl(citation) {
 }
 
 .assistant-avatar {
-  background: #f7f7f8;
-  border: 1px solid #e5e5e5;
-  color: #2d333a;
+  background: linear-gradient(135deg, #10a37f 0%, #0d8f68 100%);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  box-shadow: 
+    0 4px 12px rgba(16, 163, 127, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.assistant-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 6px 20px rgba(16, 163, 127, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .message-content {
@@ -739,21 +814,54 @@ getCitationUrl(citation) {
 }
 
 .assistant-message .message-text {
-  background: transparent;
-  border: none;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e5e7eb;
   color: #2d333a;
-  padding: 0;
-  font-size: 17px;
+  padding: 20px 24px;
+  font-size: 16px;
   line-height: 1.6;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.assistant-message .message-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.assistant-message .message-text:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 30px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(16, 163, 127, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Message Actions */
 .message-actions {
-  margin-top: 8px;
+  margin-top: 12px;
   display: flex;
   gap: 8px;
   opacity: 0;
   transition: opacity 0.2s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .assistant-message:hover .message-actions {
@@ -816,6 +924,8 @@ getCitationUrl(citation) {
   font-size: 12px;
   color: #8e8ea0;
   margin-left: 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .user-message .message-time {
@@ -826,9 +936,11 @@ getCitationUrl(citation) {
 
 /* Citations */
 .citations {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px solid #e5e5e5;
+  position: relative;
+  z-index: 2;
 }
 
 /* Citation Links */
@@ -875,11 +987,16 @@ getCitationUrl(citation) {
 
 /* Consent Request */
 .consent-request {
-  margin-top: 12px;
-  padding: 16px;
-  background: #fffbeb;
+  margin-top: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   border: 1px solid #fbbf24;
-  border-radius: 8px;
+  border-radius: 12px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 
+    0 4px 12px rgba(251, 191, 36, 0.15),
+    0 1px 3px rgba(251, 191, 36, 0.1);
 }
 
 .consent-message {
@@ -927,15 +1044,19 @@ getCitationUrl(citation) {
 
 /* Loading States */
 .loading-message .message-avatar {
-  background: #f7f7f8;
-  border: 1px solid #e5e5e5;
+  background: linear-gradient(135deg, #10a37f 0%, #0d8f68 100%);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  box-shadow: 
+    0 4px 12px rgba(16, 163, 127, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .loading-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #e5e5e5;
-  border-top: 2px solid #10a37f;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1347,10 +1468,34 @@ getCitationUrl(citation) {
 }
 
 .dark-theme .assistant-message .message-text {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 17px;
+  background: linear-gradient(135deg, #2d2d30 0%, #252526 100%);
+  border: 1px solid #4d4d4f;
+  color: #e5e5e5;
+  padding: 20px 24px;
+  font-size: 16px;
+  line-height: 1.6;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-theme .assistant-message .message-text::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.dark-theme .assistant-message .message-text:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 30px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(16, 163, 127, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .dark-theme .copy-btn {
@@ -1400,8 +1545,11 @@ getCitationUrl(citation) {
 }
 
 .dark-theme .consent-request {
-  background: #2d2d30;
+  background: linear-gradient(135deg, #2d2d30 0%, #252526 100%);
   border: 1px solid #4d4d4f;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .dark-theme .consent-message {
@@ -1504,6 +1652,8 @@ getCitationUrl(citation) {
 /* Markdown Content Styles */
 .markdown-content {
   line-height: 1.6;
+  position: relative;
+  z-index: 2;
 }
 
 .markdown-content h1,
@@ -1797,14 +1947,28 @@ getCitationUrl(citation) {
 }
 
 .dark-theme .assistant-avatar {
-  background: #2d2d30;
-  border: 1px solid #4d4d4f;
-  color: white;
+  background: linear-gradient(135deg, #10a37f 0%, #0d8f68 100%);
+  border: 2px solid #2d2d30;
+  color: #ffffff;
+  box-shadow: 
+    0 4px 12px rgba(16, 163, 127, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .assistant-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 6px 20px rgba(16, 163, 127, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .dark-theme .loading-message .message-avatar {
-  background: #2d2d30;
-  border: 1px solid #4d4d4f;
+  background: linear-gradient(135deg, #10a37f 0%, #0d8f68 100%);
+  border: 2px solid #2d2d30;
+  color: #ffffff;
+  box-shadow: 
+    0 4px 12px rgba(16, 163, 127, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .dark-theme .processing-info {
@@ -1861,6 +2025,18 @@ getCitationUrl(citation) {
     max-width: 100%;
   }
   
+  .assistant-message .message-text {
+    padding: 16px 20px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+  
+  .message-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
   .question-grid {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, 1fr);
@@ -1881,6 +2057,16 @@ getCitationUrl(citation) {
   .sample-question-btn {
     padding: 6px 10px;
     font-size: 11px;
+  }
+  
+  .citations {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  
+  .consent-request {
+    margin-top: 12px;
+    padding: 16px;
   }
 }
 </style>

@@ -311,10 +311,11 @@ export default {
     if (storedDocs) {
       this.documents = JSON.parse(storedDocs)
     } else {
+      // Currently using only 2 documents: Nagaland Innovation Hub and Mizoram Development of Helipads
       this.documents = [
-        { id: 1, name: 'Meghalaya Skywalk.pdf' },
-        { id: 2, name: 'Tripura Zoological Park.pdf' },
-        { id: 3, name: 'Kohima Football Ground.pdf' },
+        // { id: 1, name: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
+        // { id: 2, name: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
+        // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
         { id: 4, name: 'Nagaland Innovation Hub.pdf' },
         { id: 5, name: 'Mizoram Development of Helipads.pdf' }
       ]

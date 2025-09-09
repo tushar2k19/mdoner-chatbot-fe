@@ -126,7 +126,7 @@
     <div class="main-content">
       <!-- Header -->
       <div class="main-header">
-        <h1>DPR Chatbot</h1>
+        <h1 @click="resetToGreeting" class="clickable-title" title="Click to start fresh">DPR Chatbot</h1>
         <div class="header-info">
           <span class="document-count">{{ documents.length }} DPR Documents</span>
           <button class="btn-checklist" @click="$router.push('/checklist')" title="Checklist Analyzer">
@@ -209,7 +209,8 @@ export default {
       isBackendHealthy: true,
       showUserDropdown: false,
       isDarkTheme: false,
-      welcomeMessage: ''
+      welcomeMessage: '',
+      isWebSearchInProgress: false
     }
   },
 
@@ -257,7 +258,7 @@ export default {
 
     // Listen for page visibility changes to reload messages when tab becomes active
     this.visibilityChangeListener = () => {
-      if (!document.hidden && this.currentConversation) {
+      if (!document.hidden && this.currentConversation && !this.isWebSearchInProgress) {
         // Tab became visible and we have a current conversation
         // Reload messages to ensure we have the latest data
         this.reloadCurrentConversationMessages();
@@ -267,7 +268,7 @@ export default {
 
     // Listen for window focus to reload messages when window regains focus
     this.windowFocusListener = () => {
-      if (this.currentConversation) {
+      if (this.currentConversation && !this.isWebSearchInProgress) {
         // Window gained focus and we have a current conversation
         // Reload messages to ensure we have the latest data
         this.reloadCurrentConversationMessages();
@@ -320,7 +321,7 @@ export default {
         // Restore current conversation if it exists
         const storedCurrentConversationId = localStorage.getItem('dpr_current_conversation_id');
         if (storedCurrentConversationId && this.conversations.list.length > 0) {
-          const conversation = this.conversations.list.find(c => c.id == storedCurrentConversationId);
+            const conversation = this.conversations.list.find(c => c.id === storedCurrentConversationId);
           if (conversation) {
             this.currentConversation = conversation;
             this.conversations.current = conversation;
@@ -408,10 +409,11 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     async loadInitialData() {
       try {
         // Load documents - using hardcoded data for now since backend doesn't have documents endpoint
+        // Currently using only 2 documents: Nagaland Innovation Hub and Mizoram Development of Helipads
         this.documents = [
-          { id: 1, name: 'Meghalaya Skywalk.pdf' },
-          { id: 2, name: 'Tripura Zoological Park.pdf' },
-          { id: 3, name: 'Kohima Football Ground.pdf' },
+          // { id: 1, name: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
+          // { id: 2, name: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
+          // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
           { id: 4, name: 'Nagaland Innovation Hub.pdf' },
           { id: 5, name: 'Mizoram Development of Helipads.pdf' }
         ];
@@ -517,6 +519,27 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         console.error('Failed to reload messages for current conversation:', error);
         // Don't show error to user as this is a background operation
       }
+    },
+
+    // Method to reset to greeting screen
+    resetToGreeting() {
+      console.log('Resetting to greeting screen...');
+      
+      // Clear current conversation
+      this.currentConversation = null;
+      this.conversations.current = null;
+      
+      // Clear messages to show greeting
+      this.messages = [];
+      
+      // Save the cleared state to localStorage
+      this.saveStateToStorage();
+      this.saveMessagesToStorage();
+      
+      // Show success message
+      this.$toast.success('Started fresh! Ask me anything about the DPR documents.');
+      
+      console.log('Reset complete - showing greeting screen');
     },
 
     async deleteConversation(conversationId) {
@@ -738,7 +761,9 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     },
 
     async handleAllowWebSearch(message) {
+      alert("handled")
   this.loading = true;
+  this.isWebSearchInProgress = true;
   
   try {
     // Get the user's original question from the conversation
@@ -794,6 +819,10 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     this.$toast.error('Web search failed');
   } finally {
     this.loading = false;
+    // Reset the flag after a delay to allow typing effect to complete
+    setTimeout(() => {
+      this.isWebSearchInProgress = false;
+    }, 2000);
   }
 },
 
@@ -1290,6 +1319,16 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   flex: 1;
 }
 
+.clickable-title {
+  cursor: pointer;
+  transition: color .2s ease;
+  user-select: none;
+}
+
+.clickable-title:hover {
+  color: #10a37f;
+}
+
 .header-info {
   display: flex;
   align-items: center;
@@ -1651,6 +1690,10 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
 .dark-theme .main-header h1 {
   color: white;
+}
+
+.dark-theme .clickable-title:hover {
+  color: #10a37f;
 }
 
 .dark-theme .theme-toggle-btn {
