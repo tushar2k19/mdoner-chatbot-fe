@@ -57,19 +57,20 @@
           <div class="citations-label">Sources:</div>
           <div class="citation-chips">
             <a 
-              v-for="citation in getCitations(message.content)" 
-              :key="citation.url || citation"
-              :href="getCitationUrl(citation)"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="citation-chip citation-link"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
-                <polyline points="14,2 14,8 20,8"/>
-              </svg>
-              {{ getCitationTitle(citation) }}
-            </a>
+  v-for="citation in getCitations(message.content)" 
+  :key="citation.url || citation"
+  :href="getCitationUrl(citation)"
+  @click="handleCitationClick(citation, $event)"
+  :target="getCitationTarget(citation)"
+  rel="noopener noreferrer"
+  class="citation-chip citation-link"
+>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
+    <polyline points="14,2 14,8 20,8"/>
+  </svg>
+  {{ getCitationTitle(citation) }}
+</a>
           </div>
         </div>
             
@@ -408,6 +409,35 @@ export default {
       
       return html;
     },
+    // Add this new method after getMessageText
+getPlainText(content) {
+  let text = '';
+  let isConsentResponse = false;
+  
+  if (typeof content === 'string') {
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.needs_consent === true) {
+        isConsentResponse = true;
+        text = parsed.message || 'Result not found, do you wish to search the internet?';
+      } else {
+        text = parsed.answer || '';
+      }
+    } catch (e) {
+      text = content;
+    }
+  } else {
+    if (content.needs_consent === true) {
+      isConsentResponse = true;
+      text = content.message || 'Result not found, do you wish to search the internet?';
+    } else {
+      text = content.answer || '';
+    }
+  }
+  
+  // Return plain text (no HTML conversion)
+  return text || '';
+},
 
     getCitations(content) {
       if (typeof content === 'string') {
@@ -494,14 +524,257 @@ convertFileIdToDocumentName(citation) {
 getCitationUrl(citation) {
   // Handle both string citations (from DPR) and object citations (from web search)
   if (typeof citation === 'string') {
-    // For DPR citations, we don't have URLs, so return '#'
-    return '#';
+    // For DPR citations, return a special URL that triggers popup
+    return 'javascript:void(0)';
   }
   
   // For web search citations, return the URL
   return citation.url || '#';
 },
 
+handleCitationClick(citation, event) {
+  // Only handle DPR citations (strings)
+  if (typeof citation === 'string') {
+    event.preventDefault(); // Prevent default link behavior
+    
+    // Show a better-looking popup
+    const documentName = this.getCitationTitle(citation);
+    this.showDocumentModal(documentName);
+  }
+  // For web search citations, let the default behavior work (open in new tab)
+},
+
+getCitationTarget(citation) {
+  // Only open in new tab for web search citations (objects with URLs)
+  if (typeof citation === 'object' && citation.url) {
+    return '_blank';
+  }
+  // For DPR citations (strings), don't open in new tab
+  return '_self';
+},
+
+showDocumentModal(documentName) {
+  // Only detect chatbot theme, not browser theme
+  const isDarkTheme = document.body.classList.contains('dark-theme') || 
+                     document.documentElement.classList.contains('dark-theme');
+  
+  // Theme-specific colors
+  const theme = {
+    background: isDarkTheme ? '#2d2d30' : '#ffffff',
+    surface: isDarkTheme ? '#3c3c3f' : '#f8f9fa',
+    text: isDarkTheme ? '#e5e5e5' : '#2d333a',
+    textSecondary: isDarkTheme ? '#d1d5db' : '#565869',
+    textMuted: isDarkTheme ? '#8e8ea0' : '#6b7280',
+    border: isDarkTheme ? '#4d4d4f' : '#e5e5e5',
+    shadow: isDarkTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+    button: isDarkTheme ? '#10a37f' : '#10a37f',
+    buttonHover: isDarkTheme ? '#0d8f68' : '#0d8f68',
+    iconBg: isDarkTheme ? '#10a37f' : '#10a37f'
+  };
+  
+  // Rest of the method remains the same...
+  const modalHtml = `
+    <div id="document-modal" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: ${theme.shadow};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      backdrop-filter: blur(8px);
+      animation: modalFadeIn 0.3s ease-out;
+    ">
+      <div style="
+        background: ${theme.background};
+        border: 1px solid ${theme.border};
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 
+          0 20px 40px ${theme.shadow},
+          0 8px 16px ${theme.shadow},
+          inset 0 1px 0 ${isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)'};
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      ">
+        <!-- Background decoration -->
+        <div style="
+          position: absolute;
+          top: -50px;
+          right: -50px;
+          width: 100px;
+          height: 100px;
+          background: ${theme.iconBg}20;
+          border-radius: 50%;
+          z-index: 0;
+        "></div>
+        <div style="
+          position: absolute;
+          bottom: -30px;
+          left: -30px;
+          width: 60px;
+          height: 60px;
+          background: ${theme.iconBg}15;
+          border-radius: 50%;
+          z-index: 0;
+        "></div>
+        
+        <!-- Icon -->
+        <div style="
+          width: 64px;
+          height: 64px;
+          background: linear-gradient(135deg, ${theme.iconBg} 0%, ${theme.buttonHover} 100%);
+          border-radius: 50%;
+          margin: 0 auto 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 1;
+          box-shadow: 
+            0 8px 24px ${theme.iconBg}40,
+            0 4px 8px ${theme.shadow};
+        ">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+            <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
+            <polyline points="14,2 14,8 20,8"/>
+          </svg>
+        </div>
+        
+        <!-- Content -->
+        <div style="position: relative; z-index: 1;">
+          <h3 style="
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: ${theme.text};
+            line-height: 1.3;
+          ">Document Reference</h3>
+          
+          <div style="
+            background: ${theme.surface};
+            border: 1px solid ${theme.border};
+            border-radius: 12px;
+            padding: 16px;
+            margin: 0 0 20px 0;
+            position: relative;
+          ">
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 8px;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${theme.iconBg}" stroke-width="2">
+                <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              <span style="
+                font-size: 12px;
+                font-weight: 600;
+                color: ${theme.iconBg};
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              ">DPR Document</span>
+            </div>
+            <p style="
+              margin: 0;
+              font-size: 16px;
+              font-weight: 600;
+              color: ${theme.text};
+              line-height: 1.4;
+              word-break: break-word;
+            ">${documentName}</p>
+          </div>
+          
+          <p style="
+            margin: 0 0 24px 0;
+            font-size: 14px;
+            color: ${theme.textSecondary};
+            line-height: 1.5;
+          ">This is a DPR (Detailed Project Report) document. The full PDF is not available for viewing in this prototype version.</p>
+          
+          <!-- Action Button -->
+          <button onclick="document.getElementById('document-modal').remove()" style="
+            background: linear-gradient(135deg, ${theme.button} 0%, ${theme.buttonHover} 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 
+              0 4px 12px ${theme.iconBg}30,
+              0 2px 4px ${theme.shadow};
+            position: relative;
+            overflow: hidden;
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px ${theme.iconBg}40, 0 4px 8px ${theme.shadow}'" 
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px ${theme.iconBg}30, 0 2px 4px ${theme.shadow}'">
+            <span style="position: relative; z-index: 1;">Got it</span>
+            <div style="
+              position: absolute;
+              top: 0;
+              left: -100%;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+              transition: left 0.5s;
+            "></div>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes modalFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes modalSlideIn {
+        from { 
+          opacity: 0;
+          transform: translateY(30px) scale(0.95);
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+    </style>
+  `;
+  
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Close modal when clicking outside
+  document.getElementById('document-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.style.animation = 'modalFadeOut 0.2s ease-in forwards';
+      setTimeout(() => this.remove(), 200);
+    }
+  });
+  
+  // Add fade out animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes modalFadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+},
     // Typing effect for AI responses
     async simulateTyping(message, fullText) {
       message.isTyping = true;
@@ -532,7 +805,7 @@ getCitationUrl(citation) {
     // Copy message with user name appended
     async copyMessage(message) {
       try {
-        const messageText = this.getMessageText(message.content);
+        const messageText = this.getPlainText(message.content);  // ✅ FIXED HERE
         const userName = this.user.email ? this.user.email.split('@')[0] : 'User';
         const textToCopy = `${messageText}\n\n- ${userName}`;
         
