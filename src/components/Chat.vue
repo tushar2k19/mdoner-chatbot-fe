@@ -34,7 +34,7 @@
           </div>
           <div class="message-content">
             <div class="message-text assistant-text" :class="{ 'typing-effect': message.isTyping }">
-              <span v-if="message.isTyping" class="typing-text" v-html="message.displayText"></span>
+              <span v-if="message.isTyping" class="typing-text">{{ message.displayText }}</span>
               <div v-else v-html="getMessageText(message.content)" class="markdown-content"></div>
             </div>
             
@@ -227,11 +227,6 @@ export default {
             this.isLoading = false;
           }
         }
-        
-        // Scroll to bottom when messages change
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
       },
       deep: true
     }
@@ -335,44 +330,35 @@ export default {
 
     getMessageText(content) {
       let text = '';
-      let isConsentResponse = false;
       
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          // Check if this is a consent response
-          if (parsed.needs_consent === true) {
-            isConsentResponse = true;
-            text = parsed.message || 'Result not found, do you wish to search the internet?';
-          } else {
-            text = parsed.answer || '';
-          }
+          text = parsed.answer || content;
         } catch (e) {
           text = content;
         }
       } else {
-        // Check if this is a consent response
-        if (content.needs_consent === true) {
-          isConsentResponse = true;
-          text = content.message || 'Result not found, do you wish to search the internet?';
-        } else {
-          text = content.answer || '';
+        text = content.answer || '';
+      }
+      
+      // Handle nested JSON in the answer field (common issue with OpenAI)
+      if (typeof text === 'string' && text.trim().startsWith('{')) {
+        try {
+          const nestedParsed = JSON.parse(text);
+          if (nestedParsed.answer) {
+            text = nestedParsed.answer;
+            console.log('Extracted nested JSON answer:', text);
+          }
+        } catch (e) {
+          // If parsing fails, use the original text
+          console.log('Failed to parse nested JSON, using original text');
         }
       }
       
       // Debug: Log the text to see what we're working with
-      console.log('Original text:', text);
-      console.log('Is consent response:', isConsentResponse);
+      console.log('Final text:', text);
       
-      // If this is a consent response, return plain text (no markdown rendering)
-      if (isConsentResponse) {
-        return text;
-      }
-      
-      // If text is empty, return empty string (don't render markdown)
-      if (!text || text.trim() === '') {
-        return '';
-      }
       
       // Configure marked options for better rendering
       const renderer = new marked.Renderer();
@@ -442,6 +428,19 @@ getPlainText(content) {
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
+          
+          // Handle nested JSON in the answer field
+          if (parsed.answer && typeof parsed.answer === 'string' && parsed.answer.trim().startsWith('{')) {
+            try {
+              const nestedParsed = JSON.parse(parsed.answer);
+              if (nestedParsed.citations) {
+                return nestedParsed.citations;
+              }
+            } catch (e) {
+              // If nested parsing fails, continue with original logic
+            }
+          }
+          
           return parsed.citations || [];
         } catch (e) {
           return [];
@@ -454,41 +453,52 @@ getPlainText(content) {
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
+          
+          // Handle nested JSON in the answer field
+          if (parsed.answer && typeof parsed.answer === 'string' && parsed.answer.trim().startsWith('{')) {
+            try {
+              const nestedParsed = JSON.parse(parsed.answer);
+              if (nestedParsed.needs_consent !== undefined) {
+                return nestedParsed.needs_consent === true;
+              }
+            } catch (e) {
+              // If nested parsing fails, continue with original logic
+            }
+          }
+          
           return parsed.needs_consent === true;
         } catch (e) {
           return false;
         }
-      } else if (typeof content === 'object' && content !== null) {
-        // Check if needs_consent is explicitly true
-        if (content.needs_consent === true) {
-          return true;
-        }
-        
-        // Fallback: Check if the AI response indicates it can't find information
-        const answerText = content.answer || '';
-        const consentIndicators = [
-          'not found in the provided',
-          'cannot provide details',
-          'do not contain specific information',
-          'do not contain any specific information',
-          'no information available',
-          'cannot be answered from',
-          'outside the dpr domain',
-          'not available in the documents',
-          'uploaded documents do not contain',
-          'documents do not contain',
-          'cannot find information',
-          'no specific information about'
-        ];
-        
-        const needsConsentFallback = consentIndicators.some(indicator => 
-          answerText.toLowerCase().includes(indicator.toLowerCase())
-        );
-        
-        return content.needs_consent === true || needsConsentFallback;
       }
       
-      return false;
+      // Check if needs_consent is explicitly true
+      if (content.needs_consent === true) {
+        return true;
+      }
+      
+      // Fallback: Check if the AI response indicates it can't find information
+      const answerText = content.answer || '';
+      const consentIndicators = [
+        'not found in the provided',
+        'cannot provide details',
+        'do not contain specific information',
+        'do not contain any specific information',
+        'no information available',
+        'cannot be answered from',
+        'outside the dpr domain',
+        'not available in the documents',
+        'uploaded documents do not contain',
+        'documents do not contain',
+        'cannot find information',
+        'no specific information about'
+      ];
+      
+      const needsConsentFallback = consentIndicators.some(indicator => 
+        answerText.toLowerCase().includes(indicator.toLowerCase())
+      );
+      
+      return content.needs_consent === true || needsConsentFallback;
     },
 
     // Add these new methods after the needsConsent method:
@@ -779,26 +789,13 @@ showDocumentModal(documentName) {
       message.isTyping = true;
       message.displayText = '';
       
-      // For very long responses (>500 chars), show instantly
-      if (fullText.length > 500) {
-        message.displayText = fullText;
-        message.isTyping = false;
-        return;
+      for (let i = 0; i <= fullText.length; i++) {
+        message.displayText = fullText.substring(0, i);
+        await new Promise(resolve => setTimeout(resolve, 0.01)); //   ms delay between characters
       }
       
-      // Use requestAnimationFrame for smooth, fast typing
-      const typeText = (index) => {
-        if (index <= fullText.length) {
-          message.displayText = fullText.substring(0, index);
-          requestAnimationFrame(() => typeText(index + 1));
-        } else {
-          message.isTyping = false;
-          message.displayText = fullText;
-        }
-      };
-      
-      // Start typing immediately
-      requestAnimationFrame(() => typeText(0));
+      message.isTyping = false;
+      message.displayText = fullText;
     },
 
     // Copy message with user name appended
@@ -827,6 +824,17 @@ showDocumentModal(documentName) {
     }
   },
 
+  watch: {
+    // Watch for new messages to scroll to bottom
+    messages: {
+      handler() {
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
+      },
+      deep: true
+    }
+  }
 }
 </script>
 
@@ -1180,79 +1188,11 @@ showDocumentModal(documentName) {
   position: relative;
 }
 
-.typing-text {
-  /* Ensure HTML content renders properly during typing */
-  line-height: 1.6;
-  word-wrap: break-word;
-}
-
 .typing-text::after {
   content: '|';
   animation: blink 1s infinite;
   color: #10a37f;
   font-weight: bold;
-}
-
-/* Ensure typing text has same styling as markdown content */
-.typing-text h1,
-.typing-text h2,
-.typing-text h3,
-.typing-text h4,
-.typing-text h5,
-.typing-text h6 {
-  margin: 16px 0 8px 0;
-  font-weight: 600;
-  color: #2d333a;
-}
-
-.typing-text p {
-  margin: 8px 0;
-  line-height: 1.6;
-}
-
-.typing-text strong {
-  font-weight: 600;
-  color: #2d333a;
-}
-
-.typing-text em {
-  font-style: italic;
-  color: #656d76;
-}
-
-.typing-text ul,
-.typing-text ol {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.typing-text li {
-  margin: 4px 0;
-  line-height: 1.5;
-}
-
-.typing-text code {
-  background: #f6f8fa;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9em;
-  color: #d73a49;
-}
-
-.typing-text pre {
-  background: #f6f8fa;
-  padding: 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 12px 0;
-  border: 1px solid #e1e4e8;
-}
-
-.typing-text pre code {
-  background: none;
-  padding: 0;
-  color: #24292e;
 }
 
 @keyframes blink {
