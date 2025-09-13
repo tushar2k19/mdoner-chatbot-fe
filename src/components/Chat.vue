@@ -139,7 +139,6 @@
             class="message-input"
             rows="1"
             ref="messageInput"
-            :disabled="loading"
           ></textarea>
           
           <button 
@@ -213,7 +212,8 @@ export default {
   data() {
     return {
       newMessage: '',
-      isLoading: false
+      isLoading: false,
+      userScrolledUp: false
     }
   },
 
@@ -228,13 +228,25 @@ export default {
           }
         }
         
-        // Scroll to bottom when messages change
+        // Only auto-scroll if user hasn't manually scrolled up
         this.$nextTick(() => {
-          this.scrollToBottom();
+          if (!this.userScrolledUp) {
+            this.scrollToBottom();
+          }
         });
       },
       deep: true
     }
+  },
+
+  mounted() {
+    // Add scroll event listener to track user scrolling
+    this.addScrollListener();
+  },
+
+  beforeDestroy() {
+    // Remove scroll event listener
+    this.removeScrollListener();
   },
 
   methods: {
@@ -246,6 +258,9 @@ export default {
 
       // Reset textarea height to minimum
       this.resetTextareaHeight();
+
+      // Reset scroll state - new message should auto-scroll
+      this.userScrolledUp = false;
 
       // Set loading state
       this.isLoading = true;
@@ -323,6 +338,32 @@ export default {
       const container = this.$refs.messagesContainer;
       if (container) {
         container.scrollTop = container.scrollHeight;
+        this.userScrolledUp = false;
+      }
+    },
+
+    addScrollListener() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        container.addEventListener('scroll', this.handleScroll);
+      }
+    },
+
+    removeScrollListener() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        container.removeEventListener('scroll', this.handleScroll);
+      }
+    },
+
+    handleScroll() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+        
+        // Update userScrolledUp based on scroll position
+        this.userScrolledUp = !isAtBottom;
       }
     },
 
