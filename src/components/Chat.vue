@@ -20,6 +20,16 @@
           </div>
           <div class="message-content">
             <div class="message-text user-text">{{ message.content }}</div>
+            <div class="message-actions user-actions">
+              <button @click="retryQuery(message.content)" class="retry-btn" title="Retry this query">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23,4 23,10 17,10"/>
+                  <polyline points="1,20 1,14 7,14"/>
+                  <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10m22,4L18.36,18.36A9,9,0,0,1,3.51,15"/>
+                </svg>
+                Retry
+              </button>
+            </div>
             <div class="message-time">{{ formatTime(message.created_at) }}</div>
           </div>
         </div>
@@ -139,7 +149,6 @@
             class="message-input"
             rows="1"
             ref="messageInput"
-            :disabled="loading"
           ></textarea>
           
           <button 
@@ -213,7 +222,9 @@ export default {
   data() {
     return {
       newMessage: '',
-      isLoading: false
+      isLoading: false,
+      userHasScrolledUp: false,
+      lastScrollTop: 0
     }
   },
 
@@ -234,13 +245,16 @@ export default {
 
   methods: {
     async sendMessage() {
-      if (!this.newMessage.trim()) return;
+      if (!this.newMessage.trim() || this.loading) return;
 
       const messageText = this.newMessage;
       this.newMessage = '';
 
       // Reset textarea height to minimum
       this.resetTextareaHeight();
+
+      // Reset scroll state when user sends a new message
+      this.userHasScrolledUp = false;
 
       // Set loading state
       this.isLoading = true;
@@ -254,14 +268,30 @@ export default {
     },
 
     denyWebSearch() {
+      // Emit event to parent to handle consent message removal
       this.$emit('deny-web-search');
+    },
+
+    retryQuery(queryText) {
+      // Copy the query to the input field
+      this.newMessage = queryText;
+      
+      // Focus on the input field
+      this.$nextTick(() => {
+        const input = this.$refs.messageInput;
+        if (input) {
+          input.focus();
+          // Move cursor to end of text
+          input.setSelectionRange(queryText.length, queryText.length);
+        }
+      });
     },
 
     handleKeyDown(event) {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        // Only send if there's actual content and not just whitespace
-        if (this.newMessage.trim()) {
+        // Only send if there's actual content and not just whitespace, and not loading
+        if (this.newMessage.trim() && !this.loading) {
           this.sendMessage();
         }
       }
@@ -321,6 +351,41 @@ export default {
       }
     },
 
+    handleScroll() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        const currentScrollTop = container.scrollTop;
+        const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
+        
+        // Track if user has scrolled up from the bottom
+        if (currentScrollTop < this.lastScrollTop && !isAtBottom) {
+          this.userHasScrolledUp = true;
+        } else if (isAtBottom) {
+          this.userHasScrolledUp = false;
+        }
+        
+        this.lastScrollTop = currentScrollTop;
+      }
+    },
+
+    scrollToBottomIfNeeded() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        // Always scroll to bottom if user hasn't manually scrolled up
+        // OR if this is a new user message (user just sent a query)
+        if (!this.userHasScrolledUp || this.isNewUserMessage()) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    },
+
+    isNewUserMessage() {
+      // Check if the last message is a user message (indicating user just sent a query)
+      if (this.messages.length === 0) return false;
+      const lastMessage = this.messages[this.messages.length - 1];
+      return lastMessage.role === 'user';
+    },
+
     formatTime(timestamp) {
       return new Date(timestamp).toLocaleTimeString([], { 
         hour: '2-digit', 
@@ -334,12 +399,22 @@ export default {
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          text = parsed.answer || content;
+          // For consent messages, show the message field, otherwise show answer
+          if (parsed.needs_consent === true) {
+            text = parsed.message || parsed.answer || content;
+          } else {
+            text = parsed.answer || content;
+          }
         } catch (e) {
           text = content;
         }
       } else {
-        text = content.answer || '';
+        // For consent messages, show the message field, otherwise show answer
+        if (content.needs_consent === true) {
+          text = content.message || content.answer || '';
+        } else {
+          text = content.answer || '';
+        }
       }
       
       // Handle nested JSON in the answer field (common issue with OpenAI)
@@ -824,12 +899,30 @@ showDocumentModal(documentName) {
     }
   },
 
+  mounted() {
+    // Add scroll event listener to track user scroll behavior
+    this.$nextTick(() => {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        container.addEventListener('scroll', this.handleScroll);
+      }
+    });
+  },
+
+  beforeDestroy() {
+    // Clean up scroll event listener
+    const container = this.$refs.messagesContainer;
+    if (container) {
+      container.removeEventListener('scroll', this.handleScroll);
+    }
+  },
+
   watch: {
-    // Watch for new messages to scroll to bottom
+    // Watch for new messages to scroll to bottom only if user is at bottom
     messages: {
       handler() {
         this.$nextTick(() => {
-          this.scrollToBottom();
+          this.scrollToBottomIfNeeded();
         });
       },
       deep: true
@@ -1148,6 +1241,10 @@ showDocumentModal(documentName) {
   opacity: 1;
 }
 
+.user-message:hover .user-actions {
+  opacity: 1;
+}
+
 .copy-btn {
   display: flex;
   align-items: center;
@@ -1180,6 +1277,30 @@ showDocumentModal(documentName) {
 }
 
 .copy-btn svg {
+  flex-shrink: 0;
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.retry-btn svg {
   flex-shrink: 0;
 }
 
@@ -1799,6 +1920,18 @@ showDocumentModal(documentName) {
 .dark-theme .copy-btn.copied:hover {
   background: #0d8f68;
   border-color: #0d8f68;
+}
+
+.dark-theme .retry-btn {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+}
+
+.dark-theme .retry-btn:hover {
+  background: #4b5563;
+  color: white;
+  border-color: #6b7280;
 }
 
 .dark-theme .user-message .message-text {

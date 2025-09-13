@@ -50,9 +50,11 @@
           @click="selectConversation(conversation.id)"
         >
           <div class="conversation-content">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+            <div class="conversation-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
             <span v-if="!sidebarCollapsed" class="conversation-title">
               {{ conversation.title || `Chat ${conversation.id}` }}
             </span>
@@ -703,6 +705,58 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       return content.answer || '';
     },
 
+    needsConsent(content) {
+      if (typeof content === 'string') {
+        try {
+          const parsed = JSON.parse(content);
+          
+          // Handle nested JSON in the answer field
+          if (parsed.answer && typeof parsed.answer === 'string' && parsed.answer.trim().startsWith('{')) {
+            try {
+              const nestedParsed = JSON.parse(parsed.answer);
+              if (nestedParsed.needs_consent !== undefined) {
+                return nestedParsed.needs_consent === true;
+              }
+            } catch (e) {
+              // If nested parsing fails, continue with original logic
+            }
+          }
+          
+          return parsed.needs_consent === true;
+        } catch (e) {
+          return false;
+        }
+      }
+      
+      // Check if needs_consent is explicitly true
+      if (content.needs_consent === true) {
+        return true;
+      }
+      
+      // Fallback: Check if the AI response indicates it can't find information
+      const answerText = content.answer || '';
+      const consentIndicators = [
+        'not found in the provided',
+        'cannot provide details',
+        'do not contain specific information',
+        'do not contain any specific information',
+        'no information available',
+        'cannot be answered from',
+        'outside the dpr domain',
+        'not available in the documents',
+        'uploaded documents do not contain',
+        'documents do not contain',
+        'cannot find information',
+        'no specific information about'
+      ];
+      
+      const needsConsentFallback = consentIndicators.some(indicator => 
+        answerText.toLowerCase().includes(indicator.toLowerCase())
+      );
+      
+      return content.needs_consent === true || needsConsentFallback;
+    },
+
     // Enhanced typing effect with pre-processed markdown
     async simulateTyping(message, fullText) {
       message.isTyping = true;
@@ -980,6 +1034,44 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 },
 
     handleDenyWebSearch() {
+      // Find the consent request message and modify it to remove consent
+      const consentMessageIndex = this.messages.findIndex(message => 
+        message.role === 'assistant' && this.needsConsent(message.content)
+      );
+      
+      if (consentMessageIndex !== -1) {
+        const message = this.messages[consentMessageIndex];
+        
+        // Create a new content without consent request
+        let newContent;
+        if (typeof message.content === 'string') {
+          try {
+            const parsed = JSON.parse(message.content);
+            newContent = {
+              answer: parsed.message || "Result not found in the DPR documents.",
+              citations: parsed.citations || [],
+              needs_consent: false
+            };
+          } catch (e) {
+            newContent = {
+              answer: "Result not found in the DPR documents.",
+              citations: [],
+              needs_consent: false
+            };
+          }
+        } else {
+          newContent = {
+            answer: message.content.message || "Result not found in the DPR documents.",
+            citations: message.content.citations || [],
+            needs_consent: false
+          };
+        }
+        
+        // Update the message content
+        this.messages[consentMessageIndex].content = newContent;
+        this.saveMessagesToStorage();
+      }
+      
       this.$toast.info('Web search cancelled. Please try asking a different question about the DPR documents.');
     },
 
@@ -1103,7 +1195,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 /* Sidebar Styles */
 .sidebar {
   width: 260px;
-  background: #181818;
+  background: #3c3c3c;
   color: white;
   display: flex;
   flex-direction: column;
@@ -1270,6 +1362,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   cursor: pointer;
   transition: background 0.2s ease;
   font-size: 14px;
+  min-height: 44px; /* Ensure consistent minimum height */
+  box-sizing: border-box;
 }
 
 .conversation-item:hover {
@@ -1286,12 +1380,29 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   gap: 8px;
   flex: 1;
   min-width: 0;
+  height: 20px; /* Fixed height for consistent alignment */
+}
+
+.conversation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.conversation-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block; /* Remove any inline spacing */
 }
 
 .conversation-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2; /* Consistent line height */
 }
 
 .conversation-actions {
@@ -1454,7 +1565,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 }
 
 .main-header {
-  background: white;
+  background: #f7f7f8;
   padding: 12px 20px;
   display: flex;
   align-items: center;
