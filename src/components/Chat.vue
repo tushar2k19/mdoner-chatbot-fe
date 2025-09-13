@@ -11,7 +11,7 @@
     </div>
 
     <!-- Chat Messages -->
-    <div v-if="messages.length > 0" class="chat-messages" ref="messagesContainer">
+    <div v-if="messages.length > 0" class="chat-messages" ref="messagesContainer" @scroll="handleScroll">
       <div v-for="message in messages" :key="message.id" class="message-wrapper">
         <!-- User Message -->
         <div v-if="message.role === 'user'" class="message user-message">
@@ -130,6 +130,17 @@
       </div>
     </div>
 
+    <!-- Scroll to bottom button -->
+    <div v-if="!autoScrollEnabled && messages.length > 0" 
+         class="scroll-to-bottom-btn" 
+         @click="scrollToBottom">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M7 13l3 3 3-3"/>
+        <path d="M7 6l3 3 3-3"/>
+      </svg>
+      <span>New messages</span>
+    </div>
+
     <!-- Greeting -->
     <div v-if="messages.length === 0" class="greeting-text">
       <p>Hello sir, what can I do for you?</p>
@@ -224,7 +235,8 @@ export default {
       newMessage: '',
       isLoading: false,
       userHasScrolledUp: false,
-      lastScrollTop: 0
+      lastScrollTop: 0,
+      autoScrollEnabled: true
     }
   },
 
@@ -255,6 +267,7 @@ export default {
 
       // Reset scroll state when user sends a new message
       this.userHasScrolledUp = false;
+      this.autoScrollEnabled = true;
 
       // Set loading state
       this.isLoading = true;
@@ -348,6 +361,9 @@ export default {
       const container = this.$refs.messagesContainer;
       if (container) {
         container.scrollTop = container.scrollHeight;
+        // Re-enable auto-scroll when user manually clicks scroll to bottom
+        this.autoScrollEnabled = true;
+        this.userHasScrolledUp = false;
       }
     },
 
@@ -355,13 +371,18 @@ export default {
       const container = this.$refs.messagesContainer;
       if (container) {
         const currentScrollTop = container.scrollTop;
-        const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        const isAtBottom = scrollHeight - currentScrollTop - clientHeight <= 10;
         
-        // Track if user has scrolled up from the bottom
+        // If user scrolled up from bottom, disable auto-scroll
         if (currentScrollTop < this.lastScrollTop && !isAtBottom) {
           this.userHasScrolledUp = true;
+          this.autoScrollEnabled = false;
         } else if (isAtBottom) {
+          // If user is back at bottom, re-enable auto-scroll
           this.userHasScrolledUp = false;
+          this.autoScrollEnabled = true;
         }
         
         this.lastScrollTop = currentScrollTop;
@@ -371,9 +392,8 @@ export default {
     scrollToBottomIfNeeded() {
       const container = this.$refs.messagesContainer;
       if (container) {
-        // Always scroll to bottom if user hasn't manually scrolled up
-        // OR if this is a new user message (user just sent a query)
-        if (!this.userHasScrolledUp || this.isNewUserMessage()) {
+        // Only auto-scroll if enabled or if user just sent a message
+        if (this.autoScrollEnabled || this.isNewUserMessage()) {
           container.scrollTop = container.scrollHeight;
         }
       }
@@ -864,13 +884,31 @@ showDocumentModal(documentName) {
       message.isTyping = true;
       message.displayText = '';
       
+      // For very long responses, show faster to avoid long delays
+      const delay = fullText.length > 1000 ? 5 : 15; // 5ms for long text, 15ms for normal
+      
       for (let i = 0; i <= fullText.length; i++) {
         message.displayText = fullText.substring(0, i);
-        await new Promise(resolve => setTimeout(resolve, 0.01)); //   ms delay between characters
+        
+        // Only scroll if auto-scroll is enabled
+        if (this.autoScrollEnabled && i % 10 === 0) { // Only scroll every 10 characters
+          this.$nextTick(() => {
+            this.scrollToBottomIfNeeded();
+          });
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
       
       message.isTyping = false;
       message.displayText = fullText;
+      
+      // Final scroll to ensure we're at bottom if auto-scroll is enabled
+      if (this.autoScrollEnabled) {
+        this.$nextTick(() => {
+          this.scrollToBottomIfNeeded();
+        });
+      }
     },
 
     // Copy message with user name appended
@@ -2481,5 +2519,55 @@ showDocumentModal(documentName) {
     margin-top: 12px;
     padding: 16px;
   }
+}
+
+/* Scroll to bottom button */
+.scroll-to-bottom-btn {
+  position: fixed;
+  bottom: 140px;
+  right: 30px;
+  background: rgba(16, 163, 127, 0.9);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.scroll-to-bottom-btn:hover {
+  background: rgba(13, 143, 104, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 163, 127, 0.4);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark theme scroll button */
+.dark-theme .scroll-to-bottom-btn {
+  background: rgba(16, 163, 127, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.dark-theme .scroll-to-bottom-btn:hover {
+  background: rgba(13, 143, 104, 0.9);
 }
 </style>
