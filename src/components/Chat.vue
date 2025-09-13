@@ -53,26 +53,25 @@
             </div>
             
             <!-- Citations -->
-        <div v-if="getCitations(message.content).length > 0" class="citations">
-          <div class="citations-label">Sources:</div>
-          <div class="citation-chips">
-            <a 
-  v-for="citation in getCitations(message.content)" 
-  :key="citation.url || citation"
-  :href="getCitationUrl(citation)"
-  @click="handleCitationClick(citation, $event)"
-  :target="getCitationTarget(citation)"
-  rel="noopener noreferrer"
-  class="citation-chip citation-link"
->
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
-    <polyline points="14,2 14,8 20,8"/>
-  </svg>
-  {{ getCitationTitle(citation) }}
-</a>
-          </div>
-        </div>
+            <div v-if="getCitations(message.content).length > 0" class="citations">
+              <div class="citations-label">Sources:</div>
+              <div class="citation-chips">
+                <a 
+                    v-for="citation in getCitations(message.content)" 
+                    :key="citation.url || citation"
+                    :href="getCitationUrl(citation)"
+                    @click="handleCitationClick(citation, $event)"
+                    :target="getCitationTarget(citation)"
+                    rel="noopener noreferrer"
+                    class="citation-chip citation-link">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                    </svg>
+                    {{ getCitationTitle(citation) }}
+                </a>
+              </div>
+            </div>
             
             <!-- Consent Request -->
             <div v-if="needsConsent(message.content)" class="consent-request">
