@@ -411,13 +411,14 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     async loadInitialData() {
       try {
         // Load documents - using hardcoded data for now since backend doesn't have documents endpoint
-        // Currently using only 2 documents: Nagaland Innovation Hub and Mizoram Development of Helipads
+        // Currently using 3 documents: Nagaland Innovation Hub, Mizoram Development of Helipads, and Assam Road Project
         this.documents = [
           // { id: 1, name: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
           // { id: 2, name: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
           // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
           { id: 4, name: 'Nagaland Innovation Hub.pdf' },
-          { id: 5, name: 'Mizoram Development of Helipads.pdf' }
+          { id: 5, name: 'Mizoram Development of Helipads.pdf' },
+          { id: 6, name: 'Assam Road Project.pdf' }
         ];
         
         // Load conversations from real backend

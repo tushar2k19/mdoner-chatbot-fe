@@ -17,7 +17,7 @@
 ## System Overview
 
 ### Purpose
-A prototype chatbot system that allows users to query 6 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
+A prototype chatbot system that allows users to query 3 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
 
 ### Key Features
 - **Document Selection**: Users can select specific DPR documents to query
@@ -26,17 +26,14 @@ A prototype chatbot system that allows users to query 6 DPR (Detailed Project Re
 - **Session Management**: Persistent conversation history
 - **Authentication**: Secure user access and session management
 
-### Document Specifications (current prototype: 5 documents)
+### Document Specifications (current prototype: 3 documents)
 | Document | Pages | Type | Content |
 |----------|-------|------|---------|
-| Doc1 | 120 | Text-based | Searchable text |
-| Doc2 | 80 | Image-based | Needs OCR processing |
-| Doc3 | 100 | Image-based | Needs OCR processing |
-| Doc4 | 250 | Text-based | Searchable text |
-| Doc5 | 250 | Text-based | Searchable text |
-|      |     |              |                        |
+| Nagaland Innovation Hub | 120 | Text-based | Searchable text |
+| Mizoram Development of Helipads | 80 | Text-based | Searchable text |
+| Assam Road Project | 100 | Text-based | Searchable text |
 
-Note: We currently ingest 5 DPR PDFs. Additional documents can be added later without changing APIs.
+Note: We currently ingest 3 DPR PDFs. Additional documents can be added later without changing APIs.
 
 ---
 
@@ -308,15 +305,11 @@ CREATE TABLE messages (
 │                    OpenAI Vector Store                      │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Doc1      │  │   Doc2      │  │   Doc3      │        │
-│  │ (120 pages) │  │ (80 pages)  │  │ (100 pages) │        │
-│  │ Text-based  │  │ OCR'd       │  │ OCR'd       │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Doc4      │  │   Doc5      │  │   Doc6      │        │
-│  │ (250 pages) │  │ (250 pages) │  │ (250 pages) │        │
-│  │ Text-based  │  │ Text-based  │  │ OCR'd       │        │
+│  │   Nagaland  │  │   Mizoram   │  │   Assam     │        │
+│  │ Innovation  │  │ Development │  │ Road        │        │
+│  │ Hub (120p)  │  │ Helipads    │  │ Project     │        │
+│  │ Text-based  │  │ (80p)       │  │ (100p)      │        │
+│  │             │  │ Text-based  │  │ Text-based  │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -328,11 +321,9 @@ CREATE TABLE messages (
   "instructions": "You are a DPR (Detailed Project Report) document assistant.
 
 Sources:
-- Meghalaya_skywalk.pdf
-- Tripura_Zoological_Park.pdf
-- Kohima_Football_Ground.pdf
 - Nagaland_Innovation_Hub.pdf
 - Mizoram_Development_of_Helipads.pdf
+- Assam_Road_Project.pdf
 
 Rules:
 - Answer ONLY from the above DPR PDFs using the File Search tool. Do not use any other sources.

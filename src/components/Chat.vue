@@ -633,7 +633,8 @@ convertFileIdToDocumentName(citation) {
   // Document ID to name mapping (should match backend DocumentMapper)
   const fileIdToNameMap = {
     'file-GsjEvcukShCjxT1Gqx1dri': 'Nagaland Innovation Hub.pdf',
-    'file-WzxAXqwuUNpCHFwXLFkrbg': 'Mizoram Development of Helipads.pdf'
+    'file-WzxAXqwuUNpCHFwXLFkrbg': 'Mizoram Development of Helipads.pdf',
+    'file-HWZQBZpqFoYiKWMhxKtDJh': 'Assam Road Project.pdf'
   };
   
   // If it's a file ID, return the mapped name
