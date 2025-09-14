@@ -11,7 +11,7 @@
     </div>
 
     <!-- Chat Messages -->
-    <div v-if="messages.length > 0" class="chat-messages" ref="messagesContainer">
+    <div v-if="messages.length > 0" class="chat-messages" ref="messagesContainer" @scroll="handleScroll">
       <div v-for="message in messages" :key="message.id" class="message-wrapper">
         <!-- User Message -->
         <div v-if="message.role === 'user'" class="message user-message">
@@ -20,6 +20,16 @@
           </div>
           <div class="message-content">
             <div class="message-text user-text">{{ message.content }}</div>
+            <div class="message-actions user-actions">
+              <button @click="retryQuery(message.content)" class="retry-btn" title="Retry this query">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23,4 23,10 17,10"/>
+                  <polyline points="1,20 1,14 7,14"/>
+                  <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10m22,4L18.36,18.36A9,9,0,0,1,3.51,15"/>
+                </svg>
+                Retry
+              </button>
+            </div>
             <div class="message-time">{{ formatTime(message.created_at) }}</div>
           </div>
         </div>
@@ -120,6 +130,17 @@
       </div>
     </div>
 
+    <!-- Scroll to bottom button -->
+    <div v-if="!autoScrollEnabled && messages.length > 0" 
+         class="scroll-to-bottom-btn" 
+         @click="scrollToBottom">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M7 13l3 3 3-3"/>
+        <path d="M7 6l3 3 3-3"/>
+      </svg>
+      <span>New messages</span>
+    </div>
+
     <!-- Greeting -->
     <div v-if="messages.length === 0" class="greeting-text">
       <p>Hello sir, what can I do for you?</p>
@@ -139,7 +160,6 @@
             class="message-input"
             rows="1"
             ref="messageInput"
-            :disabled="loading"
           ></textarea>
           
           <button 
@@ -213,7 +233,10 @@ export default {
   data() {
     return {
       newMessage: '',
-      isLoading: false
+      isLoading: false,
+      userHasScrolledUp: false,
+      lastScrollTop: 0,
+      autoScrollEnabled: true
     }
   },
 
@@ -234,13 +257,17 @@ export default {
 
   methods: {
     async sendMessage() {
-      if (!this.newMessage.trim()) return;
+      if (!this.newMessage.trim() || this.loading) return;
 
       const messageText = this.newMessage;
       this.newMessage = '';
 
       // Reset textarea height to minimum
       this.resetTextareaHeight();
+
+      // Reset scroll state when user sends a new message
+      this.userHasScrolledUp = false;
+      this.autoScrollEnabled = true;
 
       // Set loading state
       this.isLoading = true;
@@ -254,14 +281,38 @@ export default {
     },
 
     denyWebSearch() {
+      // Emit event to parent to handle consent message removal
       this.$emit('deny-web-search');
+    },
+
+    retryQuery(queryText) {
+      // Copy the query to the input field
+      this.newMessage = queryText;
+      
+      // Force Vue reactivity update and textarea resize
+      this.$nextTick(() => {
+        const input = this.$refs.messageInput;
+        if (input) {
+          // Force textarea to show the text by triggering input event
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          
+          // Auto-resize the textarea
+          this.autoResizeTextarea();
+          
+          // Focus on the input field
+          input.focus();
+          
+          // Move cursor to end of text
+          input.setSelectionRange(queryText.length, queryText.length);
+        }
+      });
     },
 
     handleKeyDown(event) {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        // Only send if there's actual content and not just whitespace
-        if (this.newMessage.trim()) {
+        // Only send if there's actual content and not just whitespace, and not loading
+        if (this.newMessage.trim() && !this.loading) {
           this.sendMessage();
         }
       }
@@ -318,7 +369,49 @@ export default {
       const container = this.$refs.messagesContainer;
       if (container) {
         container.scrollTop = container.scrollHeight;
+        // Re-enable auto-scroll when user manually clicks scroll to bottom
+        this.autoScrollEnabled = true;
+        this.userHasScrolledUp = false;
       }
+    },
+
+    handleScroll() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        const currentScrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        const isAtBottom = scrollHeight - currentScrollTop - clientHeight <= 10;
+        
+        // If user scrolled up from bottom, disable auto-scroll
+        if (currentScrollTop < this.lastScrollTop && !isAtBottom) {
+          this.userHasScrolledUp = true;
+          this.autoScrollEnabled = false;
+        } else if (isAtBottom) {
+          // If user is back at bottom, re-enable auto-scroll
+          this.userHasScrolledUp = false;
+          this.autoScrollEnabled = true;
+        }
+        
+        this.lastScrollTop = currentScrollTop;
+      }
+    },
+
+    scrollToBottomIfNeeded() {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        // Only auto-scroll if enabled or if user just sent a message
+        if (this.autoScrollEnabled || this.isNewUserMessage()) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    },
+
+    isNewUserMessage() {
+      // Check if the last message is a user message (indicating user just sent a query)
+      if (this.messages.length === 0) return false;
+      const lastMessage = this.messages[this.messages.length - 1];
+      return lastMessage.role === 'user';
     },
 
     formatTime(timestamp) {
@@ -334,22 +427,39 @@ export default {
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          text = parsed.answer || content;
+          // For consent messages, return the message or a default consent text
+          if (parsed.needs_consent === true) {
+            return parsed.message || 'Result not found, do you wish to search the internet?';
+          } else {
+            text = parsed.answer || content;
+          }
         } catch (e) {
           text = content;
         }
       } else {
-        text = content.answer || '';
+        // For consent messages, return the message or a default consent text
+        if (content.needs_consent === true) {
+          return content.message || 'Result not found, do you wish to search the internet?';
+        } else {
+          text = content.answer || '';
+        }
       }
       
       // Handle nested JSON in the answer field (common issue with OpenAI)
+      // BUT preserve consent flags by checking first
       if (typeof text === 'string' && text.trim().startsWith('{')) {
         try {
           const nestedParsed = JSON.parse(text);
-          if (nestedParsed.answer) {
+          // Check if nested content is a consent request
+          if (nestedParsed.needs_consent === true) {
+            return nestedParsed.message || 'Result not found, do you wish to search the internet?';
+          }
+          // Only extract nested answer if it's NOT a consent request
+          if (nestedParsed.answer && nestedParsed.needs_consent !== true) {
             text = nestedParsed.answer;
             console.log('Extracted nested JSON answer:', text);
           }
+          // If it's a consent request, keep the original text for proper consent detection
         } catch (e) {
           // If parsing fails, use the original text
           console.log('Failed to parse nested JSON, using original text');
@@ -454,19 +564,24 @@ getPlainText(content) {
         try {
           const parsed = JSON.parse(content);
           
+          // Check main level first
+          if (parsed.needs_consent === true) {
+            return true;
+          }
+          
           // Handle nested JSON in the answer field
           if (parsed.answer && typeof parsed.answer === 'string' && parsed.answer.trim().startsWith('{')) {
             try {
               const nestedParsed = JSON.parse(parsed.answer);
-              if (nestedParsed.needs_consent !== undefined) {
-                return nestedParsed.needs_consent === true;
+              if (nestedParsed.needs_consent === true) {
+                return true;
               }
             } catch (e) {
               // If nested parsing fails, continue with original logic
             }
           }
           
-          return parsed.needs_consent === true;
+          return false;
         } catch (e) {
           return false;
         }
@@ -791,11 +906,26 @@ showDocumentModal(documentName) {
       
       for (let i = 0; i <= fullText.length; i++) {
         message.displayText = fullText.substring(0, i);
-        await new Promise(resolve => setTimeout(resolve, 0.01)); //   ms delay between characters
+        
+        // Only scroll occasionally and if auto-scroll is enabled
+        if (this.autoScrollEnabled && i % 100 === 0) { // Only scroll every 100 characters
+          this.$nextTick(() => {
+            this.scrollToBottomIfNeeded();
+          });
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 0.01)); // Original speed
       }
       
       message.isTyping = false;
       message.displayText = fullText;
+      
+      // Final scroll to ensure we're at bottom if auto-scroll is enabled
+      if (this.autoScrollEnabled) {
+        this.$nextTick(() => {
+          this.scrollToBottomIfNeeded();
+        });
+      }
     },
 
     // Copy message with user name appended
@@ -824,12 +954,30 @@ showDocumentModal(documentName) {
     }
   },
 
+  mounted() {
+    // Add scroll event listener to track user scroll behavior
+    this.$nextTick(() => {
+      const container = this.$refs.messagesContainer;
+      if (container) {
+        container.addEventListener('scroll', this.handleScroll);
+      }
+    });
+  },
+
+  beforeDestroy() {
+    // Clean up scroll event listener
+    const container = this.$refs.messagesContainer;
+    if (container) {
+      container.removeEventListener('scroll', this.handleScroll);
+    }
+  },
+
   watch: {
-    // Watch for new messages to scroll to bottom
+    // Watch for new messages to scroll to bottom only if user is at bottom
     messages: {
       handler() {
         this.$nextTick(() => {
-          this.scrollToBottom();
+          this.scrollToBottomIfNeeded();
         });
       },
       deep: true
@@ -1148,6 +1296,10 @@ showDocumentModal(documentName) {
   opacity: 1;
 }
 
+.user-message:hover .user-actions {
+  opacity: 1;
+}
+
 .copy-btn {
   display: flex;
   align-items: center;
@@ -1180,6 +1332,30 @@ showDocumentModal(documentName) {
 }
 
 .copy-btn svg {
+  flex-shrink: 0;
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.retry-btn svg {
   flex-shrink: 0;
 }
 
@@ -1801,6 +1977,18 @@ showDocumentModal(documentName) {
   border-color: #0d8f68;
 }
 
+.dark-theme .retry-btn {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+}
+
+.dark-theme .retry-btn:hover {
+  background: #4b5563;
+  color: white;
+  border-color: #6b7280;
+}
+
 .dark-theme .user-message .message-text {
   background: #616161;
   border-color: #616161;
@@ -2348,5 +2536,55 @@ showDocumentModal(documentName) {
     margin-top: 12px;
     padding: 16px;
   }
+}
+
+/* Scroll to bottom button */
+.scroll-to-bottom-btn {
+  position: fixed;
+  bottom: 140px;
+  right: 30px;
+  background: rgba(16, 163, 127, 0.9);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.scroll-to-bottom-btn:hover {
+  background: rgba(13, 143, 104, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 163, 127, 0.4);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark theme scroll button */
+.dark-theme .scroll-to-bottom-btn {
+  background: rgba(16, 163, 127, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.dark-theme .scroll-to-bottom-btn:hover {
+  background: rgba(13, 143, 104, 0.9);
 }
 </style>
