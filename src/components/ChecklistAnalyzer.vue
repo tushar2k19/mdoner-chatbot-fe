@@ -318,7 +318,8 @@ export default {
         // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
         { id: 4, name: 'Nagaland Innovation Hub.pdf' },
         { id: 5, name: 'Mizoram Development of Helipads.pdf' },
-        { id: 6, name: 'Assam Road Project.pdf' }
+        { id: 6, name: 'Assam Road Project.pdf' },
+        { id: 7, name: 'Khankawn Rongura Road Project.pdf' }
       ]
     }
     // Default select first document

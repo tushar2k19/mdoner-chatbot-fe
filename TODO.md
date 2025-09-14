@@ -1,21 +1,22 @@
 # DPR Chatbot Project - TODO
 
 ## Project Overview
-A prototype chatbot that answers questions from 3 DPR PDF documents. If no relevant answer is found, asks for consent to search the internet and returns responses with citations.
+A prototype chatbot that answers questions from 4 DPR PDF documents. If no relevant answer is found, asks for consent to search the internet and returns responses with citations.
 
 **Tech Stack:** Vue.js 2 (frontend), Ruby on Rails (backend), MySQL, OpenAI Assistants API
 
-## Document Details (current prototype: 3 docs)
+## Document Details (current prototype: 4 docs)
 - **Nagaland_Innovation_Hub.pdf:** DPR for Nagaland Innovation Hub
 - **Mizoram_Development_of_Helipads.pdf:** DPR for Mizoram Helipads development
 - **Assam_Road_Project.pdf:** DPR for Assam Road Project
+- **Khankawn_Rongura_Road_Project.pdf:** DPR for Khankawn Rongura Road Project
 
-Note: We currently ingest 3 DPR PDFs. More can be added later without changing schemas.
+Note: We currently ingest 4 DPR PDFs. More can be added later without changing schemas.
 
 ## Architecture
 
 ### Frontend (Vue.js 2) ✅
-- Document selection dropdown (3 PDFs)
+- Document selection dropdown (4 PDFs)
 - Chat interface (messages, streaming, loading states)
 - Session list sidebar (past conversations)
 - Consent prompt for web search
@@ -35,7 +36,7 @@ Note: We currently ingest 3 DPR PDFs. More can be added later without changing s
 
 ### OpenAI Setup (Completed)
 - ✅ One Assistant with `file_search` tool
-- ✅ Vector Store containing the 3 DPR PDFs (auto-created)
+- ✅ Vector Store containing the 4 DPR PDFs (auto-created)
 - ✅ Threads for conversation management
 - ✅ Strict JSON responses (document citations only; no URLs)
 - ✅ If no DPR answer: set `needs_consent = true`; frontend asks for web search consent
@@ -61,7 +62,7 @@ Note: We currently ingest 3 DPR PDFs. More can be added later without changing s
   - [✅] **2.1.1** Configure assistant with JSON response format
   - [✅] **2.1.2** Set up file_search tool
   - [✅] **2.1.3** Configure model (gpt-4o-mini) and temperature (0.1)
-- [✅] **2.2** ✅Upload all 3 DPR PDFs to OpenAI Files
+- [✅] **2.2** ✅Upload all 4 DPR PDFs to OpenAI Files
 - [✅] **2.3**  Create OpenAI Vector Store (auto-created when files added)
 - [✅] **2.4**  Add PDFs to Vector Store (completed automatically)
 - [✅] **2.5**  Test assistant with sample queries
@@ -256,7 +257,7 @@ S3_BUCKET_NAME=          # LOWER PRIORITY
 ## Current Status
 - [x] Project planning and architecture finalized
 - [x] OpenAI Assistant created and configured
-- [x] All 3 DPR PDFs uploaded to OpenAI
+- [x] All 4 DPR PDFs uploaded to OpenAI
 - [x] Vector store automatically created
 - [x] JSON response format tested and working
 - [x] System design documentation completed

@@ -17,7 +17,7 @@
 ## System Overview
 
 ### Purpose
-A prototype chatbot system that allows users to query 3 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
+A prototype chatbot system that allows users to query 4 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
 
 ### Key Features
 - **Document Selection**: Users can select specific DPR documents to query
@@ -26,14 +26,15 @@ A prototype chatbot system that allows users to query 3 DPR (Detailed Project Re
 - **Session Management**: Persistent conversation history
 - **Authentication**: Secure user access and session management
 
-### Document Specifications (current prototype: 3 documents)
+### Document Specifications (current prototype: 4 documents)
 | Document | Pages | Type | Content |
 |----------|-------|------|---------|
 | Nagaland Innovation Hub | 120 | Text-based | Searchable text |
 | Mizoram Development of Helipads | 80 | Text-based | Searchable text |
 | Assam Road Project | 100 | Text-based | Searchable text |
+| Khankawn Rongura Road Project | 90 | Text-based | Searchable text |
 
-Note: We currently ingest 3 DPR PDFs. Additional documents can be added later without changing APIs.
+Note: We currently ingest 4 DPR PDFs. Additional documents can be added later without changing APIs.
 
 ---
 
@@ -304,13 +305,13 @@ CREATE TABLE messages (
 ┌─────────────────────────────────────────────────────────────┐
 │                    OpenAI Vector Store                      │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Nagaland  │  │   Mizoram   │  │   Assam     │        │
-│  │ Innovation  │  │ Development │  │ Road        │        │
-│  │ Hub (120p)  │  │ Helipads    │  │ Project     │        │
-│  │ Text-based  │  │ (80p)       │  │ (100p)      │        │
-│  │             │  │ Text-based  │  │ Text-based  │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────┐│
+│  │   Nagaland  │  │   Mizoram   │  │   Assam     │  │Khank││
+│  │ Innovation  │  │ Development │  │ Road        │  │awn  ││
+│  │ Hub (120p)  │  │ Helipads    │  │ Project     │  │(90p)││
+│  │ Text-based  │  │ (80p)       │  │ (100p)      │  │Text ││
+│  │             │  │ Text-based  │  │ Text-based  │  │based││
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────┘│
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -324,6 +325,7 @@ Sources:
 - Nagaland_Innovation_Hub.pdf
 - Mizoram_Development_of_Helipads.pdf
 - Assam_Road_Project.pdf
+- Khankawn_Rongura_Road_Project.pdf
 
 Rules:
 - Answer ONLY from the above DPR PDFs using the File Search tool. Do not use any other sources.

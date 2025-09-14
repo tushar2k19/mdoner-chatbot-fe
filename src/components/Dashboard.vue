@@ -130,7 +130,53 @@
       <div class="main-header">
         <h1 @click="resetToGreeting" class="clickable-title" title="Click to start fresh">DPR Chatbot</h1>
         <div class="header-info">
-          <span class="document-count">{{ documents.length }} DPR Documents</span>
+          <div class="document-count-container" 
+               @mouseenter="handleMouseEnter" 
+               @mouseleave="handleMouseLeave">
+            <span class="document-count">{{ documents.length }} DPR Documents</span>
+            
+            <!-- Document List Popup -->
+            <div v-if="showDocumentPopup" class="document-popup" @mouseenter="handlePopupMouseEnter" @mouseleave="handlePopupMouseLeave">
+              <div class="popup-header">
+                <h4>Available Documents</h4>
+                <span class="popup-count">{{ documents.length }} documents</span>
+              </div>
+              <div class="popup-content">
+                <div v-for="doc in documents" :key="doc.id" class="document-item">
+                  <div class="document-info">
+                    <div class="document-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                      </svg>
+                    </div>
+                    <span class="document-name">"{{ getDocumentDisplayName(doc.name) }}"</span>
+                  </div>
+                  <button 
+                    class="copy-btn" 
+                    @click="copyDocumentName(doc.name)"
+                    :title="`Copy '${doc.name}' to clipboard`">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="popup-footer">
+                <button class="copy-all-btn" @click="copyAllDocumentNames">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy All Names
+                </button>
+              </div>
+            </div>
+          </div>
           <button class="btn-checklist" @click="$router.push('/checklist')" title="Checklist Analyzer">
             Checklist
           </button>
@@ -212,7 +258,10 @@ export default {
       showUserDropdown: false,
       isDarkTheme: false,
       welcomeMessage: '',
-      isWebSearchInProgress: false
+      isWebSearchInProgress: false,
+      showDocumentPopup: false,
+      hoverTimeout: null,
+      hideTimeout: null
     }
   },
 
@@ -292,6 +341,14 @@ export default {
     }
     if (this.windowFocusListener) {
       window.removeEventListener('focus', this.windowFocusListener);
+    }
+    
+    // Clean up hover timeouts
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
+    }
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
     }
   },
 
@@ -418,7 +475,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
           // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
           { id: 4, name: 'Nagaland Innovation Hub.pdf' },
           { id: 5, name: 'Mizoram Development of Helipads.pdf' },
-          { id: 6, name: 'Assam Road Project.pdf' }
+          { id: 6, name: 'Assam Road Project.pdf' },
+          { id: 7, name: 'Khankawn Rongura Road Project.pdf' }
         ];
         
         // Load conversations from real backend
@@ -1160,6 +1218,89 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       }
     },
 
+    // Copy individual document name to clipboard
+    async copyDocumentName(documentName) {
+      const formattedName = `"${this.getDocumentDisplayName(documentName)}"`;
+      try {
+        await navigator.clipboard.writeText(formattedName);
+        this.showCopyFeedback(`Copied ${formattedName}`);
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = formattedName;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        this.showCopyFeedback(`Copied ${formattedName}`);
+      }
+    },
+
+    // Copy all document names to clipboard
+    async copyAllDocumentNames() {
+      const allNames = this.documents.map(doc => `"${this.getDocumentDisplayName(doc.name)}"`).join('\n');
+      try {
+        await navigator.clipboard.writeText(allNames);
+        this.showCopyFeedback(`Copied all ${this.documents.length} document names`);
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = allNames;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        this.showCopyFeedback(`Copied all ${this.documents.length} document names`);
+      }
+    },
+
+    // Show copy feedback (you can enhance this with a toast notification)
+    showCopyFeedback(message) {
+      // Simple console log for now - you can enhance this with a toast notification
+      console.log(message);
+      // Optional: Add a temporary visual feedback
+      // You could implement a toast notification system here
+    },
+
+    // Improved hover handling for better UX
+    handleMouseEnter() {
+      // Clear any pending hide timeout
+      if (this.hideTimeout) {
+        clearTimeout(this.hideTimeout);
+        this.hideTimeout = null;
+      }
+      
+      // Show popup immediately on hover
+      this.showDocumentPopup = true;
+    },
+
+    handleMouseLeave() {
+      // Set a delay before hiding to allow mouse to move to popup
+      this.hideTimeout = setTimeout(() => {
+        this.showDocumentPopup = false;
+      }, 150); // 150ms delay
+    },
+
+    handlePopupMouseEnter() {
+      // Clear any pending hide timeout when mouse enters popup
+      if (this.hideTimeout) {
+        clearTimeout(this.hideTimeout);
+        this.hideTimeout = null;
+      }
+      // Keep popup visible
+      this.showDocumentPopup = true;
+    },
+
+    handlePopupMouseLeave() {
+      // Hide popup when mouse leaves popup area
+      this.showDocumentPopup = false;
+    },
+
+    // Format document name for display (remove .pdf extension)
+    getDocumentDisplayName(documentName) {
+      return documentName.replace(/\.pdf$/i, '');
+    },
+
 
 
     async logout() {
@@ -1655,12 +1796,239 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
   justify-content: center;
 }
 
+.document-count-container {
+  position: relative;
+  display: inline-block;
+}
+
 .document-count {
   font-size: 14px;
   color: #565869;
   background: #f1f1f1;
   padding: 4px 8px;
   border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.document-count:hover {
+  background: #e8e8e8;
+  transform: translateY(-1px);
+}
+
+/* Document Popup Styles */
+.document-popup {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px; /* Reduced gap for better hover experience */
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  min-width: 320px;
+  max-width: 400px;
+  z-index: 1000;
+  animation: popupFadeIn 0.2s ease-out;
+}
+
+/* Invisible bridge to connect trigger and popup for better hover */
+.document-popup::before {
+  content: '';
+  position: absolute;
+  top: -8px; /* Extends upward to bridge the gap */
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.popup-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.popup-count {
+  font-size: 12px;
+  color: #718096;
+  background: #f7fafc;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.popup-content {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  transition: background-color 0.2s ease;
+}
+
+.document-item:hover {
+  background-color: #f8f9fa;
+}
+
+.document-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.document-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #e3f2fd;
+  border-radius: 8px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.document-icon svg {
+  color: #1976d2;
+}
+
+.document-name {
+  font-size: 14px;
+  color: #2d3748;
+  font-weight: 500;
+  word-break: break-word;
+  line-height: 1.4;
+  font-style: italic;
+  letter-spacing: 0.025em;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.copy-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e0;
+  transform: scale(1.05);
+}
+
+.copy-btn svg {
+  color: #64748b;
+}
+
+.copy-btn:hover svg {
+  color: #475569;
+}
+
+.popup-footer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.copy-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.copy-all-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+.copy-all-btn svg {
+  margin-right: 8px;
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .document-popup {
+    min-width: 280px;
+    max-width: 320px;
+    left: 0;
+    transform: none;
+    margin-left: -20px;
+  }
+  
+  .document-popup::before {
+    left: 20px;
+    right: 20px;
+  }
+  
+  .popup-header {
+    padding: 12px 16px 8px;
+  }
+  
+  .popup-header h4 {
+    font-size: 14px;
+  }
+  
+  .document-item {
+    padding: 10px 16px;
+  }
+  
+  .document-name {
+    font-size: 13px;
+  }
+  
+  .popup-footer {
+    padding: 8px 16px 12px;
+  }
+  
+  .copy-all-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 
 .btn-checklist {
@@ -1986,6 +2354,84 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 .dark-theme .document-count {
   background: #4d4d4f;
   color: #e5e5e5;
+}
+
+.dark-theme .document-count:hover {
+  background: #5a5a5c;
+}
+
+/* Dark Theme Popup Styles */
+.dark-theme .document-popup {
+  background: #2d2d30;
+  border-color: #3e3e42;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .popup-header {
+  border-bottom-color: #3e3e42;
+}
+
+.dark-theme .popup-header h4 {
+  color: #e5e5e5;
+}
+
+.dark-theme .popup-count {
+  background: #3e3e42;
+  color: #b3b3b3;
+}
+
+.dark-theme .document-item:hover {
+  background-color: #3e3e42;
+}
+
+.dark-theme .document-icon {
+  background: #1e3a8a;
+}
+
+.dark-theme .document-icon svg {
+  color: #60a5fa;
+}
+
+.dark-theme .document-name {
+  color: #e5e5e5;
+  font-style: italic;
+  letter-spacing: 0.025em;
+}
+
+.dark-theme .copy-btn {
+  border-color: #4a5568;
+}
+
+.dark-theme .copy-btn:hover {
+  background: #4a5568;
+  border-color: #718096;
+}
+
+.dark-theme .copy-btn svg {
+  color: #a0aec0;
+}
+
+.dark-theme .copy-btn:hover svg {
+  color: #e2e8f0;
+}
+
+.dark-theme .popup-footer {
+  border-top-color: #3e3e42;
+}
+
+.dark-theme .copy-all-btn {
+  background: #3e3e42;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+.dark-theme .copy-all-btn:hover {
+  background: #4a5568;
+  border-color: #718096;
+}
+
+.dark-theme .copy-all-btn svg {
+  color: #a0aec0;
 }
 
 .dark-theme .backend-status.healthy {
