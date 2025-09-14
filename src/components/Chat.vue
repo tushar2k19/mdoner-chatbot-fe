@@ -289,11 +289,19 @@ export default {
       // Copy the query to the input field
       this.newMessage = queryText;
       
-      // Focus on the input field
+      // Force Vue reactivity update and textarea resize
       this.$nextTick(() => {
         const input = this.$refs.messageInput;
         if (input) {
+          // Force textarea to show the text by triggering input event
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          
+          // Auto-resize the textarea
+          this.autoResizeTextarea();
+          
+          // Focus on the input field
           input.focus();
+          
           // Move cursor to end of text
           input.setSelectionRange(queryText.length, queryText.length);
         }
@@ -419,9 +427,9 @@ export default {
       if (typeof content === 'string') {
         try {
           const parsed = JSON.parse(content);
-          // For consent messages, show the message field, otherwise show answer
+          // For consent messages, return the message or a default consent text
           if (parsed.needs_consent === true) {
-            text = parsed.message || parsed.answer || content;
+            return parsed.message || 'Result not found, do you wish to search the internet?';
           } else {
             text = parsed.answer || content;
           }
@@ -429,22 +437,29 @@ export default {
           text = content;
         }
       } else {
-        // For consent messages, show the message field, otherwise show answer
+        // For consent messages, return the message or a default consent text
         if (content.needs_consent === true) {
-          text = content.message || content.answer || '';
+          return content.message || 'Result not found, do you wish to search the internet?';
         } else {
           text = content.answer || '';
         }
       }
       
       // Handle nested JSON in the answer field (common issue with OpenAI)
+      // BUT preserve consent flags by checking first
       if (typeof text === 'string' && text.trim().startsWith('{')) {
         try {
           const nestedParsed = JSON.parse(text);
-          if (nestedParsed.answer) {
+          // Check if nested content is a consent request
+          if (nestedParsed.needs_consent === true) {
+            return nestedParsed.message || 'Result not found, do you wish to search the internet?';
+          }
+          // Only extract nested answer if it's NOT a consent request
+          if (nestedParsed.answer && nestedParsed.needs_consent !== true) {
             text = nestedParsed.answer;
             console.log('Extracted nested JSON answer:', text);
           }
+          // If it's a consent request, keep the original text for proper consent detection
         } catch (e) {
           // If parsing fails, use the original text
           console.log('Failed to parse nested JSON, using original text');
@@ -549,19 +564,24 @@ getPlainText(content) {
         try {
           const parsed = JSON.parse(content);
           
+          // Check main level first
+          if (parsed.needs_consent === true) {
+            return true;
+          }
+          
           // Handle nested JSON in the answer field
           if (parsed.answer && typeof parsed.answer === 'string' && parsed.answer.trim().startsWith('{')) {
             try {
               const nestedParsed = JSON.parse(parsed.answer);
-              if (nestedParsed.needs_consent !== undefined) {
-                return nestedParsed.needs_consent === true;
+              if (nestedParsed.needs_consent === true) {
+                return true;
               }
             } catch (e) {
               // If nested parsing fails, continue with original logic
             }
           }
           
-          return parsed.needs_consent === true;
+          return false;
         } catch (e) {
           return false;
         }
@@ -884,20 +904,17 @@ showDocumentModal(documentName) {
       message.isTyping = true;
       message.displayText = '';
       
-      // For very long responses, show faster to avoid long delays
-      const delay = fullText.length > 1000 ? 5 : 15; // 5ms for long text, 15ms for normal
-      
       for (let i = 0; i <= fullText.length; i++) {
         message.displayText = fullText.substring(0, i);
         
-        // Only scroll if auto-scroll is enabled
-        if (this.autoScrollEnabled && i % 10 === 0) { // Only scroll every 10 characters
+        // Only scroll occasionally and if auto-scroll is enabled
+        if (this.autoScrollEnabled && i % 100 === 0) { // Only scroll every 100 characters
           this.$nextTick(() => {
             this.scrollToBottomIfNeeded();
           });
         }
         
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(resolve => setTimeout(resolve, 0.01)); // Original speed
       }
       
       message.isTyping = false;
