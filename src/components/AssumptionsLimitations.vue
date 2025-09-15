@@ -62,7 +62,7 @@
               <h4>What This System Does</h4>
             </div>
             <p class="section-description">
-              This chatbot answers questions from 2 DPR (Detailed Project Report) documents using AI technology. 
+              This chatbot answers questions from 4 DPR (Detailed Project Report) documents using AI technology. 
               When it can't find information in the documents, it can search the internet with your permission.
             </p>
           </div>
@@ -191,10 +191,10 @@ export default {
       hoverTimeout: null,
       hideTimeout: null,
       assumptions: [
-        {
+      {
           title: "Document Scope Assumptions",
-          subtitle: "Limited to 2 specific documents",
-          assumption: "Only 2 specific documents are currently available: Nagaland Innovation Hub.pdf and Mizoram Development of Helipads.pdf",
+          subtitle: "Limited to 4 specific documents",
+          assumption: "Only 4 specific documents are currently available: Nagaland Innovation Hub.pdf, Mizoram Development of Helipads.pdf, Assam Road Project.pdf, and Khankawn Rongura Road Project.pdf",
           reasoning: "At prototype level, we focus on core functionality with manageable document set",
           expectation: "Questions should relate to these documents for optimal results"
         },
@@ -207,8 +207,8 @@ export default {
         },
         {
           title: "Response Format Assumptions",
-          subtitle: "Comprehensive 300-400 word responses",
-          assumption: "Users expect comprehensive 300-400 word responses with detailed explanations",
+          subtitle: "Concise 130-150 word responses",
+          assumption: "Users expect concise 130-150 word responses with clear, structured explanations",
           reasoning: "DPR documents contain complex information requiring thorough analysis",
           expectation: "Responses will show document sources but not specific page numbers (prototype-level citation system)"
         },
@@ -252,7 +252,7 @@ export default {
         "Ask specific, detailed questions to get the best results",
         "Be patient - allow 5-15 seconds for responses",
         "Use conversation context for follow-up questions",
-        "Understand document scope - only 2 documents are currently available",
+        "Understand document scope - only 4 documents are currently available",
         "Be prepared to consent to internet search when needed",
         "Expect text-based content to work better than image-heavy documents"
       ]
