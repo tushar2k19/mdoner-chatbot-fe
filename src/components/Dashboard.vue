@@ -180,6 +180,8 @@
           <button class="btn-checklist" @click="$router.push('/checklist')" title="Checklist Analyzer">
             Checklist
           </button>
+          <!-- Assumptions & Limitations Component -->
+          <AssumptionsLimitations :isDarkTheme="isDarkTheme" />
           <!-- Theme Toggle Button -->
           <div class="theme-toggle-container">
             <button @click="toggleTheme" class="theme-toggle-btn" :class="{ 'dark': isDarkTheme }">
@@ -240,11 +242,13 @@
 <script>
 import backendHealthService from '@/services/BackendHealthService.js'
 import Chat from './Chat.vue'
+import AssumptionsLimitations from './AssumptionsLimitations.vue'
 
 export default {
   name: 'Dashboard',
   components: {
-    Chat
+    Chat,
+    AssumptionsLimitations
   },
   data() {
     return {
