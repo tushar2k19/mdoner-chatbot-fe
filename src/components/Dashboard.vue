@@ -379,7 +379,7 @@ export default {
         // Restore current conversation if it exists
         const storedCurrentConversationId = localStorage.getItem('dpr_current_conversation_id');
         if (storedCurrentConversationId && this.conversations.list.length > 0) {
-          const conversation = this.conversations.list.find(c => c.id === storedCurrentConversationId);
+          const conversation = this.conversations.list.find(c => String(c.id) === storedCurrentConversationId || c.id === Number(storedCurrentConversationId));
           if (conversation) {
             this.currentConversation = conversation;
             this.conversations.current = conversation;
@@ -407,7 +407,7 @@ export default {
         localStorage.setItem('dpr_sidebar_collapsed', JSON.stringify(this.sidebarCollapsed));
         // Also save current conversation ID separately for better persistence
         if (this.currentConversation) {
-          localStorage.setItem('dpr_current_conversation_id', this.currentConversation.id);
+          localStorage.setItem('dpr_current_conversation_id', String(this.currentConversation.id));
         }
       } catch (error) {
         console.error('Error saving state to localStorage:', error);
