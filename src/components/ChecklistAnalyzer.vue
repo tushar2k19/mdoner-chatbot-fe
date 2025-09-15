@@ -73,7 +73,7 @@
                     <polyline points="14,2 14,8 20,8"/>
                   </svg>
                 </div>
-                <span class="doc-name">{{ doc.name }}</span>
+                <span class="doc-name">{{ doc.displayName || doc.name }}</span>
               </div>
             </label>
           </div>
@@ -156,7 +156,7 @@
           </div>
           <div>
             <h3>Analysis Results</h3>
-            <p class="results-subtitle">Document: {{ selectedDocument }}</p>
+            <p class="results-subtitle">Document: {{ getDisplayName(selectedDocument) }}</p>
           </div>
         </div>
         <button class="btn btn-secondary" @click="startNewAnalysis">
@@ -311,15 +311,15 @@ export default {
     if (storedDocs) {
       this.documents = JSON.parse(storedDocs)
     } else {
-      // Currently using 3 documents: Nagaland Innovation Hub, Mizoram Development of Helipads, and Assam Road Project
+      // Currently using 4 documents with normalized names for backend consistency
       this.documents = [
-        // { id: 1, name: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
-        // { id: 2, name: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
-        // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
-        { id: 4, name: 'Nagaland Innovation Hub.pdf' },
-        { id: 5, name: 'Mizoram Development of Helipads.pdf' },
-        { id: 6, name: 'Assam Road Project.pdf' },
-        { id: 7, name: 'Khankawn Rongura Road Project.pdf' }
+        // { id: 1, name: 'Meghalaya_Skywalk.pdf', displayName: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
+        // { id: 2, name: 'Tripura_Zoological_Park.pdf', displayName: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
+        // { id: 3, name: 'Kohima_Football_Ground.pdf', displayName: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
+        { id: 4, name: 'Nagaland_Innovation_Hub.pdf', displayName: 'Nagaland Innovation Hub.pdf' },
+        { id: 5, name: 'Mizoram_Development_of_Helipads.pdf', displayName: 'Mizoram Development of Helipads.pdf' },
+        { id: 6, name: 'Assam_Road_Project.pdf', displayName: 'Assam Road Project.pdf' },
+        { id: 7, name: 'Khankawn_Rongura_Road_Project.pdf', displayName: 'Khankawn Rongura Road Project.pdf' }
       ]
     }
     // Default select first document
@@ -340,17 +340,25 @@ export default {
   methods: {
     defaultItems() {
       return [
-        'Project timeline and milestones',
-        'Environmental impact assessment',
-        'Budget allocation and cost breakdown',
-        'Risk assessment and mitigation strategies',
-        'Stakeholder engagement plan',
-        'Technical specifications and requirements',
-        'Resource requirements and availability',
-        'Quality assurance and monitoring measures',
-        'Compliance with regulatory standards',
-        'Expected outcomes and deliverables'
+        'Project rationale and intended beneficiaries',
+        'Socio-economic benefits of the project',
+        'Alignment with scheme guidelines and focus areas',
+        'Output Outcome framework with KPIs for monitoring',
+        'SDG or other indices that the KPIs will impact and how',
+        'Exact population of the State mentioned in DPR',
+        'Total Project Cost for the Project',
+        'Convergence plan with other ongoing government interventions',
+        'Prioritized list of projects',
+        'Alignment with Gati Shakti Master Plan',
+        'Satellite imagery/photographs of project sites with location details',
+        'Statutory clearances for Forest and Environment aspects',
+        'Sustainability plan and environmental considerations',
+        'Implementation timelines and project milestones'
       ]
+    },
+    getDisplayName(documentName) {
+      const doc = this.documents.find(d => d.name === documentName)
+      return doc ? (doc.displayName || doc.name) : documentName
     },
     startNewAnalysis() {
       this.showResults = false

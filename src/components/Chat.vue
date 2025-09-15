@@ -544,6 +544,7 @@ getPlainText(content) {
             try {
               const nestedParsed = JSON.parse(parsed.answer);
               if (nestedParsed.citations) {
+                console.log('Found nested citations:', nestedParsed.citations);
                 return nestedParsed.citations;
               }
             } catch (e) {
@@ -551,12 +552,17 @@ getPlainText(content) {
             }
           }
           
-          return parsed.citations || [];
+          const citations = parsed.citations || [];
+          console.log('Found citations:', citations);
+          return citations;
         } catch (e) {
+          console.log('Error parsing citations:', e);
           return [];
         }
       }
-      return content.citations || [];
+      const citations = content.citations || [];
+      console.log('Found object citations:', citations);
+      return citations;
     },
 
     needsConsent(content) {

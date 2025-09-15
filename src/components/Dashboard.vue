@@ -279,9 +279,6 @@ export default {
       return;
     }
 
-    // Load state from localStorage
-    this.loadStateFromStorage();
-    
     // Load theme preference
     const savedTheme = localStorage.getItem('dpr_theme');
     if (savedTheme === 'dark') {
@@ -291,7 +288,12 @@ export default {
     
     // Check backend health
     await this.checkBackendHealth();
+    
+    // Load initial data first (conversations from backend)
     await this.loadInitialData();
+    
+    // Then restore state from localStorage (this will properly restore currentConversation)
+    this.loadStateFromStorage();
 
     // Listen for backend health changes
     this.backendHealthListener = (event) => {
@@ -356,15 +358,8 @@ export default {
     // Load state from localStorage
     loadStateFromStorage() {
       try {
-        const storedConversations = localStorage.getItem('dpr_conversations');
-        if (storedConversations) {
-          this.conversations = JSON.parse(storedConversations);
-        }
-        
-        const storedDocuments = localStorage.getItem('dpr_documents');
-        if (storedDocuments) {
-          this.documents = JSON.parse(storedDocuments);
-        }
+        // Don't overwrite conversations list - it was just loaded from backend
+        // Only restore the current conversation reference
         
         const storedMessages = localStorage.getItem('dpr_messages');
         if (storedMessages) {
@@ -380,14 +375,19 @@ export default {
         // Restore current conversation if it exists
         const storedCurrentConversationId = localStorage.getItem('dpr_current_conversation_id');
         if (storedCurrentConversationId && this.conversations.list.length > 0) {
-            const conversation = this.conversations.list.find(c => c.id === storedCurrentConversationId);
+          const conversation = this.conversations.list.find(c => c.id === storedCurrentConversationId);
           if (conversation) {
             this.currentConversation = conversation;
             this.conversations.current = conversation;
+            console.log('Restored current conversation:', conversation.id, conversation.title);
             // Load messages for the restored conversation
             this.$nextTick(() => {
               this.loadConversationMessages(conversation.id);
             });
+          } else {
+            console.warn('Stored conversation ID not found in current conversations list:', storedCurrentConversationId);
+            // Clear the invalid stored conversation ID
+            localStorage.removeItem('dpr_current_conversation_id');
           }
         }
       } catch (error) {
@@ -468,15 +468,15 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     async loadInitialData() {
       try {
         // Load documents - using hardcoded data for now since backend doesn't have documents endpoint
-        // Currently using 3 documents: Nagaland Innovation Hub, Mizoram Development of Helipads, and Assam Road Project
+        // Currently using 4 documents with normalized names for backend consistency
         this.documents = [
-          // { id: 1, name: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
-          // { id: 2, name: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
-          // { id: 3, name: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
-          { id: 4, name: 'Nagaland Innovation Hub.pdf' },
-          { id: 5, name: 'Mizoram Development of Helipads.pdf' },
-          { id: 6, name: 'Assam Road Project.pdf' },
-          { id: 7, name: 'Khankawn Rongura Road Project.pdf' }
+          // { id: 1, name: 'Meghalaya_Skywalk.pdf', displayName: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
+          // { id: 2, name: 'Tripura_Zoological_Park.pdf', displayName: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
+          // { id: 3, name: 'Kohima_Football_Ground.pdf', displayName: 'Kohima Football Ground.pdf' }, // COMMENTED OUT - not currently used
+          { id: 4, name: 'Nagaland_Innovation_Hub.pdf', displayName: 'Nagaland Innovation Hub.pdf' },
+          { id: 5, name: 'Mizoram_Development_of_Helipads.pdf', displayName: 'Mizoram Development of Helipads.pdf' },
+          { id: 6, name: 'Assam_Road_Project.pdf', displayName: 'Assam Road Project.pdf' },
+          { id: 7, name: 'Khankawn_Rongura_Road_Project.pdf', displayName: 'Khankawn Rongura Road Project.pdf' }
         ];
         
         // Load conversations from real backend
@@ -495,6 +495,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
     async createNewConversation() {
       try {
+        console.log('Creating new conversation...');
         const response = await this.$http.secured.post('/api/conversations', {
           title: `New Chat ${Date.now()}`
         });
@@ -511,6 +512,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         this.saveStateToStorage();
         this.saveMessagesToStorage();
         
+        console.log('New conversation created:', newConversation.id, newConversation.title);
         this.$toast.success('New conversation created!');
       } catch (error) {
         console.error('Failed to create conversation:', error);
@@ -520,11 +522,14 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
     async selectConversation(conversationId) {
       const conversation = this.conversations.list.find(c => c.id === conversationId);
-      if (!conversation) return;
+      if (!conversation) {
+        console.error('Conversation not found:', conversationId);
+        return;
+      }
 
+      console.log('Selecting conversation:', conversation.id, conversation.title);
       this.currentConversation = conversation;
       this.conversations.current = conversation;
-      // alert(this.currentConversation)
       
       // Save to localStorage
       this.saveStateToStorage();
@@ -658,7 +663,17 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         if (!this.currentConversation) {
           console.warn('No current conversation found, creating new one. Messages count:', this.messages.length);
           console.warn('Current conversation state:', this.currentConversation);
+          console.warn('Available conversations:', this.conversations.list.length);
           await this.createNewConversation();
+        } else {
+          // Verify that the current conversation still exists in the conversations list
+          const conversationExists = this.conversations.list.find(c => c.id === this.currentConversation.id);
+          if (!conversationExists) {
+            console.warn('Current conversation no longer exists in conversations list, creating new one');
+            console.warn('Current conversation ID:', this.currentConversation.id);
+            console.warn('Available conversation IDs:', this.conversations.list.map(c => c.id));
+            await this.createNewConversation();
+          }
         }
 
         // Check if this is the first message before adding it
@@ -1296,9 +1311,13 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       this.showDocumentPopup = false;
     },
 
-    // Format document name for display (remove .pdf extension)
+    // Format document name for display (use displayName if available, otherwise remove .pdf extension)
     getDocumentDisplayName(documentName) {
-      return documentName.replace(/\.pdf$/i, '');
+      const doc = this.documents.find(d => d.name === documentName)
+      if (doc && doc.displayName) {
+        return doc.displayName.replace(/\.pdf$/i, '')
+      }
+      return documentName.replace(/\.pdf$/i, '')
     },
 
 
