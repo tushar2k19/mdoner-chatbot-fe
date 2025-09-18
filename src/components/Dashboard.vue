@@ -379,7 +379,7 @@ export default {
         // Restore current conversation if it exists
         const storedCurrentConversationId = localStorage.getItem('dpr_current_conversation_id');
         if (storedCurrentConversationId && this.conversations.list.length > 0) {
-          const conversation = this.conversations.list.find(c => c.id === storedCurrentConversationId);
+          const conversation = this.conversations.list.find(c => String(c.id) === storedCurrentConversationId || c.id === Number(storedCurrentConversationId));
           if (conversation) {
             this.currentConversation = conversation;
             this.conversations.current = conversation;
@@ -407,7 +407,7 @@ export default {
         localStorage.setItem('dpr_sidebar_collapsed', JSON.stringify(this.sidebarCollapsed));
         // Also save current conversation ID separately for better persistence
         if (this.currentConversation) {
-          localStorage.setItem('dpr_current_conversation_id', this.currentConversation.id);
+          localStorage.setItem('dpr_current_conversation_id', String(this.currentConversation.id));
         }
       } catch (error) {
         console.error('Error saving state to localStorage:', error);
@@ -491,7 +491,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         // Save conversations and documents to localStorage (but NOT messages)
         this.saveStateToStorage();
 
-        this.$toast.success('Loaded DPR documents successfully!');
+        // this.$toast.success('Loaded DPR documents successfully!');
       } catch (error) {
         console.error('Failed to load initial data:', error);
         this.$toast.error('Failed to load data');
@@ -518,7 +518,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         this.saveMessagesToStorage();
         
         console.log('New conversation created:', newConversation.id, newConversation.title);
-        this.$toast.success('New conversation created!');
+        // this.$toast.success('New conversation created!');
       } catch (error) {
         console.error('Failed to create conversation:', error);
         this.$toast.error('Failed to create conversation');
@@ -608,7 +608,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       this.saveMessagesToStorage();
       
       // Show success message
-      this.$toast.success('Started fresh! Ask me anything about the DPR documents.');
+      // this.$toast.success('Started fresh! Ask me anything about the DPR documents.');
       
       console.log('Reset complete - showing greeting screen');
     },
@@ -730,7 +730,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
             this.simulateTyping(aiMessage, fullText);
           });
           
-          this.$toast.success('Response received!');
+          // this.$toast.success('Response received!');
         }
       } catch (error) {
         console.error('Send message error:', error);
