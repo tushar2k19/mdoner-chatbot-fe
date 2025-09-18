@@ -166,6 +166,19 @@
           </svg>
           New Analysis
         </button>
+        <div class="download-menu-wrapper">
+          <button class="btn" @click.stop="toggleDownloadMenu" :disabled="!results || !results.length" title="Download">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20v-8m0 0l-3 3m3-3l3 3"/>
+              <rect x="4" y="3" width="16" height="12" rx="2" ry="2"/>
+            </svg>
+            Download
+          </button>
+          <div v-if="showDownloadMenu" class="download-menu">
+            <button class="menu-item" @click="exportToPDF">Download as PDF</button>
+            <button class="menu-item" @click="exportToExcel">Download as Excel</button>
+          </div>
+        </div>
       </div>
       
       <div class="results-summary">
@@ -209,7 +222,7 @@
 
       <div class="table-container">
         <div class="table-wrapper">
-          <table class="result-table">
+          <table ref="resultTable" class="result-table">
             <thead>
               <tr>
                 <th class="item-header">
@@ -279,6 +292,14 @@
 </template>
 
 <script>
+// Use pdfmake for reliable PDF text rendering
+import pdfMake from 'pdfmake/build/pdfmake'
+import pdfFonts from 'pdfmake/build/vfs_fonts'
+pdfMake.vfs = pdfFonts.vfs
+import * as XLSX from 'xlsx'
+/* eslint-disable */
+
+
 export default {
   name: 'ChecklistAnalyzer',
   data() {
@@ -289,7 +310,8 @@ export default {
       loading: false,
       results: [],
       showResults: false,
-      isDarkTheme: false
+      isDarkTheme: false,
+      showDownloadMenu: false
     }
   },
   computed: {
@@ -337,8 +359,46 @@ export default {
       // Fallback defaults
       this.checklistItems = this.defaultItems()
     }
+    // Always register outside-click listener for download menu (regardless of API success)
+    document.addEventListener('click', this.onDocClick)
   },
+
+  beforeDestroy() {
+    document.removeEventListener('click', this.onDocClick)
+  },
+
   methods: {
+
+    // Remove citation artifacts like 【...】, [Doc.pdf], inline file.pdf tokens, and page markers like 4:14Doc.pdf
+    cleanCitations(txt) {
+      const s = (txt || '')
+        .replace(/【[^】]*】/g, '')                 // remove blocks like 【...】
+        .replace(/\[[^\]]*?\.pdf\]/gi, '')      // remove [something.pdf]
+        .replace(/\b\d+:\d+\S*?\.pdf\b/gi, '') // remove 4:14Nagaland_Innovation_Hub.pdf
+        .replace(/\b\S+?\.pdf\b/gi, '')         // remove loose file names ending with .pdf
+        .replace(/†/g, '')                         // remove dagger markers
+        .replace(/\s{2,}/g, ' ')                  // collapse extra spaces
+        .trim()
+      return s
+    },
+
+    // Apply paragraph breaks for readability in PDF (same idea as Excel)
+    paragraphizeForPdf(txt) {
+      const s = (txt || '')
+        // 1) Normalize exotic/unicode spaces and invisible chars
+        .replace(/\u00AD/g, '')                 // soft hyphen
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')  // zero-width
+        .replace(/[\x00-\x1F\x7F]/g, '')        // control chars
+        .replace(/\u00A0/g, ' ')                // NBSP -> space
+        .replace(/[\u2000-\u200A\u202F\u205F\u3000]/g, ' ') // thin/ideographic -> space
+        // 2) Fix character-by-character spaced runs (letters/digits)
+        .replace(/((?:[A-Za-z]\s){2,}[A-Za-z])/g, (m) => m.replace(/\s/g, ''))
+        .replace(/((?:\d\s){1,}\d)/g, (m) => m.replace(/\s/g, ''))
+        .replace(/\.\s+(?=[A-Z0-9\(\[“"])/g, '.\n\n')
+        .replace(/;\s+/g, ';\n')
+        .replace(/\s*[-•]\s+/g, '\n• ');
+      return s.trim();
+    },
     defaultItems() {
       return [
         'Project rationale and intended beneficiaries',
@@ -365,6 +425,16 @@ export default {
       this.showResults = false
       this.results = []
     },
+        // Download menu controls
+        toggleDownloadMenu() {
+      this.showDownloadMenu = !this.showDownloadMenu
+    },
+    onDocClick(e) {
+      const wrap = this.$el.querySelector('.download-menu-wrapper')
+      if (wrap && !wrap.contains(e.target)) {
+        this.showDownloadMenu = false
+      }
+    },
     addItem() {
       this.checklistItems.push('')
     },
@@ -376,6 +446,7 @@ export default {
       this.loading = true
       this.results = []
       this.showResults = false
+      
       
       try {
         const payload = {
@@ -398,6 +469,189 @@ export default {
       }
     },
     
+    // Frontend no longer cleans remarks; backend returns already-clean text
+    // cleanRemark removed
+    // PDF export (data-driven, selectable text)
+    exportToPDF() {
+      this.showDownloadMenu = false
+      if (!this.results || !this.results.length) return
+
+      const title = 'Checklist Analysis'
+      const docName = this.getDisplayName(this.selectedDocument)
+      const dateStr = new Date().toISOString().slice(0, 10)
+
+      const yes = this.getStatusCount('yes')
+      const partial = this.getStatusCount('partial')
+      const no = this.getStatusCount('no')
+
+      // Build pdfmake table body with colored status cells
+      const tableBody = [
+        [{ text: 'Item #', style: 'tableHeader' }, { text: 'Checklist Item', style: 'tableHeader' }, { text: 'Status', style: 'tableHeader' }, { text: 'Remarks', style: 'tableHeader' }],
+        ...this.results.map((r, i) => {
+          const status = (r.status || '').toString()
+          const s = status.toLowerCase()
+          let statusCell = { text: status, alignment: 'center' }
+          if (s.includes('yes') || s.includes('found') || s.includes('covered')) {
+            statusCell = { text: status, alignment: 'center', fillColor: '#EAF7F0', color: '#14532D' }
+          } else if (s.includes('partial')) {
+            statusCell = { text: status, alignment: 'center', fillColor: '#FFF4D6', color: '#7C2D12' }
+          } else if (s.includes('no') || s.includes('not')) {
+            statusCell = { text: status, alignment: 'center', fillColor: '#FDE2E2', color: '#991B1B' }
+          }
+          return [
+            { text: String(i + 1) },
+            { text: r.item || '' },
+            statusCell,
+            { text: this.paragraphizeForPdf(this.cleanCitations(r.remarks || '')) }
+          ]
+        })
+      ]
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [24, 36, 24, 36],
+        footer: function(currentPage, pageCount) {
+          return { text: `Page ${currentPage} of ${pageCount}` , alignment: 'right', margin: [0, 0, 24, 12], color: '#6B7280', fontSize: 9 }
+        },
+        content: [
+          { text: title, style: 'title' },
+          { columns: [
+              { text: `Document: ${docName}`, style: 'meta' },
+              { text: `Date: ${dateStr}`, style: 'meta', alignment: 'right' }
+            ], margin: [0, 2, 0, 8]
+          },
+          { canvas: [ { type: 'line', x1: 0, y1: 0, x2: 555, y2: 0, lineWidth: 0.75, lineColor: '#E5E7EB' } ], margin: [0,0,0,10] },
+          { columns: [
+              { text: `${yes} Found`, style: 'chipGreen' },
+              { text: `${partial} Partial`, style: 'chipAmber' },
+              { text: `${no} Not Found`, style: 'chipRed' },
+              { text: '', width: '*' }
+            ], margin: [0, 0, 0, 8]
+          },
+          {
+            table: { headerRows: 1, widths: [40, 190, 70, '*'], body: tableBody },
+            layout: {
+              fillColor: function (rowIndex, node, columnIndex) {
+                if (rowIndex === 0) return '#1F2937'
+                return (rowIndex % 2 === 0) ? '#F9FAFB' : null
+              },
+              hLineColor: '#D1D5DB', vLineColor: '#D1D5DB'
+            }
+          }
+        ],
+        styles: {
+          title: { fontSize: 16, bold: true, color: '#111827', margin: [0,0,0,6] },
+          meta: { fontSize: 10, color: '#111827' },
+          tableHeader: { color: '#FFFFFF', bold: true, alignment: 'center' },
+          statusCell: { alignment: 'center' },
+          chipGreen: { color: '#166534', background: '#DCFCE7', margin: [0, 4, 8, 8] },
+          chipAmber: { color: '#92400E', background: '#FEF3C7', margin: [0, 4, 8, 8] },
+          chipRed: { color: '#B91C1C', background: '#FEE2E2', margin: [0, 4, 8, 8] }
+        },
+        defaultStyle: { fontSize: 10, color: '#2D333A' }
+      }
+
+      pdfMake.createPdf(docDefinition).download(`Checklist_${this.safeFilename(docName)}_${dateStr}.pdf`)
+      this.$toast && this.$toast.success('PDF downloaded')
+    },
+
+    // Excel export (structured, filterable)
+    exportToExcel() {
+      this.showDownloadMenu = false
+      if (!this.results || !this.results.length) return
+
+      const header = ['Item #', 'Checklist Item', 'Status', 'Remarks']
+      // Format remarks with paragraph breaks for readability in Excel
+      const paragraphize = (txt) => {
+        const s = this.cleanCitations(txt || '')
+          // add blank line after a period followed by a capital/number/open bracket
+          .replace(/\.\s+(?=[A-Z0-9\(\[“"])/g, '.\n\n')
+          // line break after semicolons
+          .replace(/;\s+/g, ';\n')
+          // turn bullets into new lines
+          .replace(/\s*[-•]\s+/g, '\n• ');
+        return s.trim();
+      }
+      const bodyRows = this.results.map((r, i) => [i + 1, r.item || '', r.status || '', paragraphize(r.remarks)])
+
+      const docName = this.getDisplayName(this.selectedDocument)
+      const dateStr = new Date().toISOString().slice(0, 10)
+
+      // Build sheet data with a styled header section
+      const titleRow = [`Checklist – ${docName} (${dateStr})`]
+      const metaRow = ['Document:', docName, 'Date:', dateStr]
+      const emptyRow = ['']
+      const data = [titleRow, metaRow, emptyRow, header, ...bodyRows]
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.aoa_to_sheet(data)
+
+      // Column widths
+      ws['!cols'] = [
+        { wch: 8 },   // Item #
+        { wch: 48 },  // Checklist Item
+        { wch: 12 },  // Status
+        { wch: 100 }  // Remarks
+      ]
+
+      // Merge the big title across A1:D1
+      ws['!merges'] = ws['!merges'] || []
+      ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } })
+
+      // Add autofilter on the data table (row 4 is header, zero-indexed r=3)
+      const lastRow = 3 + bodyRows.length
+      ws['!autofilter'] = { ref: `A4:D${lastRow}` }
+
+      // Optional styling (supported in some viewers)
+      const setCell = (addr, s) => { if (ws[addr]) ws[addr].s = s }
+      const col = (index) => String.fromCharCode('A'.charCodeAt(0) + index)
+      // Title style (green band)
+      setCell('A1', { font: { sz: 16, bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '10A37F' }, patternType: 'solid' }, alignment: { vertical: 'center' } })
+      // Meta row subtle background
+      ;['A2','B2','C2','D2'].forEach(a => setCell(a, { fill: { fgColor: { rgb: 'F3F4F6' }, patternType: 'solid' }, font: { color: { rgb: '111827' } } }))
+      // Meta labels bold
+      setCell('A2', { font: { bold: true } })
+      setCell('C2', { font: { bold: true } })
+      // Header row bold + center with strong background
+      ;['A4','B4','C4','D4'].forEach(a => setCell(a, { font: { bold: true, color: { rgb: 'FFFFFF' } }, alignment: { vertical: 'center', horizontal: 'center' }, fill: { fgColor: { rgb: '374151' }, patternType: 'solid' }, border: { top: { style: 'thin', color: { rgb: '111827' } }, bottom: { style: 'thin', color: { rgb: '111827' } }, left: { style: 'thin', color: { rgb: '111827' } }, right: { style: 'thin', color: { rgb: '111827' } } } }))
+      // Body styling: zebra rows, status colors, borders, wrap remarks
+      for (let r = 5; r <= lastRow + 1; r++) {
+        const isOdd = (r % 2) === 1
+        // Row zebra background for A-D
+        ;['A','B','C','D'].forEach(ch => {
+          const addr = `${ch}${r}`
+          const base = { font: { sz: 11, color: { rgb: '111827' } }, alignment: { vertical: 'top', horizontal: ch === 'C' ? 'center' : 'left', wrapText: ch === 'D' }, border: { top: { style: 'thin', color: { rgb: 'D1D5DB' } }, bottom: { style: 'thin', color: { rgb: 'D1D5DB' } }, left: { style: 'thin', color: { rgb: 'D1D5DB' } }, right: { style: 'thin', color: { rgb: 'D1D5DB' } } } }
+          const fill = isOdd ? { fill: { fgColor: { rgb: 'F9FAFB' }, patternType: 'solid' } } : {}
+          setCell(addr, { ...base, ...fill })
+        })
+        // Status pill color
+        const statusAddr = `C${r}`
+        const raw = (ws[statusAddr] && ws[statusAddr].v ? String(ws[statusAddr].v).toLowerCase() : '')
+        if (raw.includes('yes') || raw.includes('found') || raw.includes('covered')) {
+          setCell(statusAddr, { fill: { fgColor: { rgb: 'DCFCE7' }, patternType: 'solid' }, font: { color: { rgb: '166534' }, bold: true } })
+        } else if (raw.includes('partial')) {
+          setCell(statusAddr, { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' }, font: { color: { rgb: '92400E' }, bold: true } })
+        } else if (raw.includes('no') || raw.includes('not')) {
+          setCell(statusAddr, { fill: { fgColor: { rgb: 'FEE2E2' }, patternType: 'solid' }, font: { color: { rgb: 'B91C1C' }, bold: true } })
+        }
+      }
+
+      // Suggest row heights (title/meta/header and body)
+      ws['!rows'] = ws['!rows'] || []
+      ws['!rows'][0] = { hpt: 28 }
+      ws['!rows'][1] = { hpt: 18 }
+      ws['!rows'][3] = { hpt: 22 }
+      // Make body rows a bit taller for readability
+      for (let i = 4; i <= lastRow; i++) {
+        ws['!rows'][i] = ws['!rows'][i] || { hpt: 28 }
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Results')
+      XLSX.writeFile(wb, `Checklist_${this.safeFilename(docName)}_${dateStr}.xlsx`)
+      this.$toast && this.$toast.success('Excel downloaded')
+    },
+
+
     getStatusClass(status) {
       if (!status) return 'unknown'
       const normalized = status.toLowerCase().replace(/\s+/g, '-')
@@ -426,6 +680,14 @@ export default {
         document.documentElement.classList.remove('dark-theme');
         localStorage.setItem('dpr_theme', 'light');
       }
+    },
+    // Create cross-platform safe filenames
+    safeFilename(name) {
+      return (name || 'Document')
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^\w\-]+/g, '_')
+        .replace(/_+/g, '_')
+        .slice(0, 80);
     }
   }
 }
@@ -946,8 +1208,9 @@ export default {
 
 .results-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* keep title at left */
   align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
   padding: 20px;
   background: white;
@@ -959,6 +1222,14 @@ export default {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* Push actions to the right: the first button takes margin-left:auto, the download stays next to it */
+.results-header .btn.btn-secondary {
+  margin-left: auto;
+}
+.results-header .download-menu-wrapper {
+  margin-left: 8px;
 }
 
 .results-icon {
@@ -1423,6 +1694,20 @@ export default {
   color: #d1d5db;
   border-bottom-color: #4d4d4f;
 }
+
+.download-menu-wrapper { position: relative; display: inline-flex; }
+.download-menu {
+  position: absolute; right: 0; top: 42px; background: #ffffff; border: 1px solid #e5e7eb;
+  border-radius: 10px; box-shadow: 0 12px 28px rgba(16,24,40,.15); min-width: 200px; z-index: 20; overflow: hidden;
+  padding: 6px 0;
+}
+.download-menu::before {
+  content: ""; position: absolute; right: 14px; top: -6px; width: 12px; height: 12px; background: #ffffff;
+  border-left: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb; transform: rotate(45deg);
+}
+.menu-item { width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; cursor: pointer; font-size: 14px; color: #111827; }
+.menu-item:hover { background: #f3f4f6; }
+
 
 .dark-theme .result-table td {
   border-bottom-color: #4d4d4f;
