@@ -311,7 +311,7 @@ export default {
     if (storedDocs) {
       this.documents = JSON.parse(storedDocs)
     } else {
-      // Currently using 4 documents with normalized names for backend consistency
+      // Currently using 5 documents with normalized names for backend consistency
       this.documents = [
         // { id: 1, name: 'Meghalaya_Skywalk.pdf', displayName: 'Meghalaya Skywalk.pdf' }, // COMMENTED OUT - not currently used
         // { id: 2, name: 'Tripura_Zoological_Park.pdf', displayName: 'Tripura Zoological Park.pdf' }, // COMMENTED OUT - not currently used
@@ -319,7 +319,8 @@ export default {
         { id: 4, name: 'Nagaland_Innovation_Hub.pdf', displayName: 'Nagaland Innovation Hub.pdf' },
         { id: 5, name: 'Mizoram_Development_of_Helipads.pdf', displayName: 'Mizoram Development of Helipads.pdf' },
         { id: 6, name: 'Assam_Road_Project.pdf', displayName: 'Assam Road Project.pdf' },
-        { id: 7, name: 'Khankawn_Rongura_Road_Project.pdf', displayName: 'Khankawn Rongura Road Project.pdf' }
+        { id: 7, name: 'Khankawn_Rongura_Road_Project.pdf', displayName: 'Khankawn Rongura Road Project.pdf' },
+        { id: 8, name: 'Coffee_Development_Nagaland.pdf', displayName: 'Coffee Development Nagaland.pdf' }
       ]
     }
     // Default select first document

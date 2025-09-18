@@ -62,7 +62,7 @@
               <h4>What This System Does</h4>
             </div>
             <p class="section-description">
-              This chatbot answers questions from 4 DPR (Detailed Project Report) documents using AI technology. 
+              This chatbot answers questions from 5 DPR (Detailed Project Report) documents using AI technology. 
               When it can't find information in the documents, it can search the internet with your permission.
             </p>
           </div>
@@ -193,8 +193,8 @@ export default {
       assumptions: [
       {
           title: "Document Scope Assumptions",
-          subtitle: "Limited to 4 specific documents",
-          assumption: "Only 4 specific documents are currently available: Nagaland Innovation Hub.pdf, Mizoram Development of Helipads.pdf, Assam Road Project.pdf, and Khankawn Rongura Road Project.pdf",
+          subtitle: "Limited to 5 specific documents",
+          assumption: "Only 5 specific documents are currently available: Nagaland Innovation Hub.pdf, Mizoram Development of Helipads.pdf, Assam Road Project.pdf, Khankawn Rongura Road Project.pdf, and Coffee Development Nagaland.pdf",
           reasoning: "At prototype level, we focus on core functionality with manageable document set",
           expectation: "Questions should relate to these documents for optimal results"
         },
@@ -970,3 +970,8 @@ export default {
   }
 }
 </style>
+
+
+
+
+

@@ -63,7 +63,7 @@
               <h3>What This System Does</h3>
             </div>
             <div class="section-content">
-              <p>This chatbot answers questions from <strong>4 DPR (Detailed Project Report) documents</strong> using AI technology. When it can't find information in the documents, it can search the internet with your permission.</p>
+              <p>This chatbot answers questions from <strong>5 DPR (Detailed Project Report) documents</strong> using AI technology. When it can't find information in the documents, it can search the internet with your permission.</p>
             </div>
           </div>
 
@@ -94,7 +94,7 @@
                 <div class="card-content">
                   <div class="assumption-item">
                     <span class="assumption-label">Available Documents:</span>
-                    <span class="assumption-value">4 DPR documents</span>
+                    <span class="assumption-value">5 DPR documents</span>
                   </div>
                   <div class="assumption-item">
                     <span class="assumption-label">Document Types:</span>
@@ -908,3 +908,6 @@ export default {
   }
 }
 </style>
+
+
+

@@ -544,7 +544,6 @@ getPlainText(content) {
             try {
               const nestedParsed = JSON.parse(parsed.answer);
               if (nestedParsed.citations) {
-                console.log('Found nested citations:', nestedParsed.citations);
                 return nestedParsed.citations;
               }
             } catch (e) {
@@ -552,17 +551,12 @@ getPlainText(content) {
             }
           }
           
-          const citations = parsed.citations || [];
-          console.log('Found citations:', citations);
-          return citations;
+          return parsed.citations || [];
         } catch (e) {
-          console.log('Error parsing citations:', e);
           return [];
         }
       }
-      const citations = content.citations || [];
-      console.log('Found object citations:', citations);
-      return citations;
+      return content.citations || [];
     },
 
     needsConsent(content) {
@@ -641,7 +635,8 @@ convertFileIdToDocumentName(citation) {
     'file-S15U6VUjfhjfrxBvKSEV74': 'Nagaland Innovation Hub.pdf',
     'file-9zpZMkoWhkd7Ua6of8Ss4K': 'Mizoram Development of Helipads.pdf',
     'file-HWZQBZpqFoYiKWMhxKtDJh': 'Assam Road Project.pdf',
-    'file-RR8o9DK99jgubhoU1au4Yu': 'Khankawn Rongura Road Project.pdf'
+    'file-RR8o9DK99jgubhoU1au4Yu': 'Khankawn Rongura Road Project.pdf',
+    'file-SsWbvBjh7BCVgVemFS2epi': 'Coffee Development Nagaland.pdf'
   };
   
   // If it's a file ID, return the mapped name

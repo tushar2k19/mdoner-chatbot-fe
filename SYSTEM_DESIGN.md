@@ -17,7 +17,7 @@
 ## System Overview
 
 ### Purpose
-A prototype chatbot system that allows users to query 4 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
+A prototype chatbot system that allows users to query 5 DPR (Detailed Project Report) PDF documents. The system provides accurate, citation-backed responses and falls back to internet search when document information is insufficient.
 
 ### Key Features
 - **Document Selection**: Users can select specific DPR documents to query
@@ -26,15 +26,16 @@ A prototype chatbot system that allows users to query 4 DPR (Detailed Project Re
 - **Session Management**: Persistent conversation history
 - **Authentication**: Secure user access and session management
 
-### Document Specifications (current prototype: 4 documents)
+### Document Specifications (current prototype: 5 documents)
 | Document | Pages | Type | Content |
 |----------|-------|------|---------|
 | Nagaland Innovation Hub | 120 | Text-based | Searchable text |
 | Mizoram Development of Helipads | 80 | Text-based | Searchable text |
 | Assam Road Project | 100 | Text-based | Searchable text |
 | Khankawn Rongura Road Project | 90 | Text-based | Searchable text |
+| Coffee Development Nagaland | 95 | Text-based | Searchable text |
 
-Note: We currently ingest 4 DPR PDFs. Additional documents can be added later without changing APIs.
+Note: We currently ingest 5 DPR PDFs. Additional documents can be added later without changing APIs.
 
 ---
 
