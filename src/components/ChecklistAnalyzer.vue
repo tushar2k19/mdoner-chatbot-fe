@@ -384,6 +384,15 @@ export default {
     // Apply paragraph breaks for readability in PDF (same idea as Excel)
     paragraphizeForPdf(txt) {
       const s = (txt || '')
+        // 1) Normalize exotic/unicode spaces and invisible chars
+        .replace(/\u00AD/g, '')                 // soft hyphen
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')  // zero-width
+        .replace(/[\x00-\x1F\x7F]/g, '')        // control chars
+        .replace(/\u00A0/g, ' ')                // NBSP -> space
+        .replace(/[\u2000-\u200A\u202F\u205F\u3000]/g, ' ') // thin/ideographic -> space
+        // 2) Fix character-by-character spaced runs (letters/digits)
+        .replace(/((?:[A-Za-z]\s){2,}[A-Za-z])/g, (m) => m.replace(/\s/g, ''))
+        .replace(/((?:\d\s){1,}\d)/g, (m) => m.replace(/\s/g, ''))
         .replace(/\.\s+(?=[A-Z0-9\(\[“"])/g, '.\n\n')
         .replace(/;\s+/g, ';\n')
         .replace(/\s*[-•]\s+/g, '\n• ');
