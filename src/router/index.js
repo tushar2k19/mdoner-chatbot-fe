@@ -4,6 +4,7 @@ import Home from '../components/Home.vue'
 import Signin from '../components/Signin.vue'
 import Dashboard from '../components/Dashboard.vue'
 import ChecklistAnalyzer from '../components/ChecklistAnalyzer.vue'
+import NotFound from '../components/NotFound.vue'
 
 
 Vue.use(Router)
@@ -57,7 +58,12 @@ const router = new Router({
     //   },
     //   meta: { requiresAuth: true }
     // },
-    //
+    // Catch-all route for 404 errors - must be last
+    {
+      path: '*',
+      name: 'NotFound',
+      component: NotFound
+    }
    
   ]
 })
@@ -65,6 +71,12 @@ const router = new Router({
 router.beforeEach((to, from, next) => {
   const access = localStorage.getItem('jwt_access')
   const isAuthenticated = access && isTokenValid(access)
+
+  // Allow NotFound route to proceed without authentication checks
+  if (to.name === 'NotFound') {
+    next()
+    return
+  }
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
