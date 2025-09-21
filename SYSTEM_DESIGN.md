@@ -92,6 +92,11 @@ Note: We currently ingest 5 DPR PDFs. Additional documents can be added later wi
 │  │ Document    │  │ Consent     │  │ Citation    │        │
 │  │ Selector    │  │ Modal       │  │ Chips       │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ Checklist   │  │ 404 Error   │  │ Markdown    │        │
+│  │ Analyzer    │  │ Handler     │  │ Renderer    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,6 +108,10 @@ Note: We currently ingest 5 DPR PDFs. Additional documents can be added later wi
 - **Consent Modal**: Web search permission interface
 - **Infinite Scroll**: Load older messages as user scrolls up (like ChatGPT)
 - **LLM Clarification**: Assistant can ask for clarification on ambiguous queries
+- **404 Error Handling**: World-class error page with authentication-aware redirects
+- **Checklist Analysis**: Advanced document analysis with color-coded results
+- **Markdown Rendering**: Rich text display with tables and structured formatting
+- **Theme Consistency**: Unified charcoal black theme across all components
 
 #### State Management
 ```javascript
@@ -299,7 +308,41 @@ CREATE TABLE messages (
 - **CDN Integration**: Fast global access via CloudFront
 - **Backup**: Automatic versioning and cross-region replication
 
-### 4. OpenAI Integration
+### 4. 404 Error Handling
+
+#### NotFound Component Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    NotFound Component                        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ Background  │  │ 3D Error    │  │ Help Cards  │        │
+│  │ Animation   │  │ Number      │  │ & Actions   │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ Floating    │  │ Neural      │  │ Gradient    │        │
+│  │ Shapes      │  │ Network     │  │ Orbs        │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Key Features
+- **World-class Design**: Modern AI chatbot aesthetic with 3D animations
+- **Charcoal Theme**: Consistent with dashboard design (#2d2d30, #4d4d4f, #565869)
+- **Authentication-Aware**: Redirects to home (authenticated) or signin (unauthenticated)
+- **Visual Effects**: Floating shapes, neural network patterns, gradient orbs
+- **Responsive Design**: Works across all device sizes
+- **Error Messages**: User-friendly messaging with helpful suggestions
+
+#### Implementation Details
+- **Router Integration**: Catch-all route (`{ path: '*', name: 'NotFound' }`)
+- **Authentication Check**: Uses localStorage to determine redirect destination
+- **CSS Animations**: Keyframe animations for floating shapes and gradient effects
+- **SVG Graphics**: Neural network pattern with animated connections
+- **Theme Variables**: CSS custom properties for consistent theming
+
+### 5. OpenAI Integration
 
 #### Vector Store Setup
 ```
@@ -313,6 +356,10 @@ CREATE TABLE messages (
 │  │ Text-based  │  │ (80p)       │  │ (100p)      │  │Text ││
 │  │             │  │ Text-based  │  │ Text-based  │  │based││
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────┘│
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │           Coffee Development Nagaland (95p)            │ │
+│  │                    Text-based                          │ │
+│  └─────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -327,6 +374,7 @@ Sources:
 - Mizoram_Development_of_Helipads.pdf
 - Assam_Road_Project.pdf
 - Khankawn_Rongura_Road_Project.pdf
+- Coffee_Development_Nagaland.pdf
 
 Rules:
 - Answer ONLY from the above DPR PDFs using the File Search tool. Do not use any other sources.

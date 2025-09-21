@@ -257,7 +257,7 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Available Documents:</span>
-                <span class="info-value">4 DPR PDFs</span>
+                <span class="info-value">5 DPR PDFs</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Response Format:</span>
