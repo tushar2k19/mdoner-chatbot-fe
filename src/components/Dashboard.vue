@@ -51,9 +51,9 @@
         >
           <div class="conversation-content">
             <div class="conversation-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
             </div>
             <span v-if="!sidebarCollapsed" class="conversation-title">
               {{ conversation.title || `Chat ${conversation.id}` }}
@@ -133,7 +133,7 @@
           <div class="document-count-container" 
                @mouseenter="handleMouseEnter" 
                @mouseleave="handleMouseLeave">
-            <span class="document-count">{{ documents.length }} DPR Documents</span>
+          <span class="document-count">{{ documents.length }} DPR Documents</span>
             
             <!-- Document List Popup -->
             <div v-if="showDocumentPopup" class="document-popup" @mouseenter="handlePopupMouseEnter" @mouseleave="handlePopupMouseLeave">
@@ -147,14 +147,14 @@
                     <div class="document-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
-                      </svg>
-                    </div>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
+                </div>
                     <span class="document-name">"{{ getDocumentDisplayName(doc.name) }}"</span>
-                  </div>
+              </div>
                   <button 
                     class="copy-btn" 
                     @click="copyDocumentName(doc.name)"
@@ -164,7 +164,7 @@
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                     </svg>
                   </button>
-                </div>
+            </div>
               </div>
               <div class="popup-footer">
                 <button class="copy-all-btn" @click="copyAllDocumentNames">
@@ -179,7 +179,7 @@
           </div>
           <button class="btn-checklist" @click="$router.push('/checklist')" title="Checklist Analyzer">
             Checklist
-          </button>
+                </button>
           <!-- Assumptions & Limitations Component -->
           <AssumptionsLimitations :isDarkTheme="isDarkTheme" />
           <!-- Theme Toggle Button -->
@@ -201,8 +201,8 @@
                   <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                   </svg>
-                </div>
               </div>
+            </div>
             </button>
           </div>
           <span 
@@ -216,8 +216,8 @@
             {{ isBackendHealthy ? 'Backend Online' : 'Backend Offline' }}
           </span>
           
+          </div>
         </div>
-      </div>
 
       <!-- Chat Area -->
       <div class="chat-container">
@@ -483,7 +483,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
           { id: 7, name: 'Khankawn_Rongura_Road_Project.pdf', displayName: 'Khankawn Rongura Road Project.pdf' },
           { id: 8, name: 'Coffee_Development_Nagaland.pdf', displayName: 'Coffee Development Nagaland.pdf' }
         ];
-        
+
         // Load conversations from real backend
         const response = await this.$http.secured.get('/api/conversations');
         this.conversations.list = response.data.conversations || [];
@@ -514,7 +514,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         this.messages = [];
         
         // Save to localStorage
-        this.saveStateToStorage();
+          this.saveStateToStorage();
         this.saveMessagesToStorage();
         
         console.log('New conversation created:', newConversation.id, newConversation.title);
@@ -531,7 +531,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         console.error('Conversation not found:', conversationId);
         return;
       }
-
+      
       console.log('Selecting conversation:', conversation.id, conversation.title);
       this.currentConversation = conversation;
       this.conversations.current = conversation;
@@ -546,7 +546,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     // Helper method to load messages for a conversation
     async loadConversationMessages(conversationId) {
       try {
-        const response = await this.$http.secured.get(`/api/conversations/${conversationId}/messages`);
+          const response = await this.$http.secured.get(`/api/conversations/${conversationId}/messages`);
         // Support both wrapped { success, data: { messages: [] } } and plain { messages: [] }
         const apiData = response && response.data && response.data.data ? response.data.data : response.data;
         this.messages = (apiData && apiData.messages) ? apiData.messages : [];
@@ -569,8 +569,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
 
       } catch (error) {
         console.error('Failed to load messages:', error);
-        this.messages = [];
-      }
+          this.messages = [];
+        }
     },
 
     // Method to reload messages for the current conversation
@@ -650,7 +650,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
           conversation.title = newTitle.trim();
           this.$toast.success('Conversation renamed!');
           this.saveStateToStorage();
-        } catch (error) {
+      } catch (error) {
           console.error('Failed to rename conversation:', error);
           this.$toast.error('Failed to rename conversation');
         }
@@ -687,8 +687,8 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
         // Push the user's message locally for immediate UI feedback
         this.messages.push({
           id: Date.now(),
-          role: 'user',
-          content: messageText,
+            role: 'user',
+            content: messageText,
           source: null,
           created_at: new Date().toISOString()
         });
@@ -765,9 +765,9 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     },
 
     async askExample(query) {
-      if (!this.currentConversation) {
-        await this.createNewConversation();
-      }
+        if (!this.currentConversation) {
+          await this.createNewConversation();
+        }
       // Send the example query directly
       await this.handleSendMessage(query);
     },
@@ -1092,12 +1092,12 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
     // Add error message to chat
     this.messages.push({
       id: Date.now(),
-      role: 'assistant',
-      content: {
+        role: 'assistant',
+        content: {
         answer: 'Sorry, I couldn\'t search the internet right now. Please try again later.',
-        citations: [],
-        needs_consent: false
-      },
+          citations: [],
+          needs_consent: false
+        },
       source: 'web',
       created_at: new Date().toISOString()
     });
@@ -1138,7 +1138,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
               needs_consent: false
             };
           }
-        } else {
+      } else {
           newContent = {
             answer: message.content.message || "Result not found in the DPR documents.",
             citations: message.content.citations || [],
