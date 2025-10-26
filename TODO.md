@@ -362,6 +362,47 @@ S3_BUCKET_NAME=          # LOWER PRIORITY
   - Ensured visual consistency across NotFound, Dashboard, and other components
   - Implemented proper dark/light theme support throughout the application
 
+- **2025-01-XX: Document-Specific Checklist Questions (Completed)**
+  - Created comprehensive document-specific checklist questions data structure in backend
+  - Implemented 5 document-specific question sets:
+    - Nagaland Innovation Hub: 15 specialized questions including EMIC approval, SLEC endorsement, and specific compliance requirements
+    - Mizoram Development of Helipads: 14 questions including statutory clearances and environmental considerations
+    - Khankawn Rongura Road Project: 14 questions focused on road infrastructure and O&M mechanisms
+    - Assam Road Project: 16 questions covering comprehensive road project requirements
+    - Coffee Development Nagaland: 13 questions specific to agricultural development projects
+  - Updated backend checklist controller to accept document_name parameter and return document-specific questions
+  - Enhanced frontend ChecklistAnalyzer component with dynamic question loading based on document selection
+  - Added loading indicators and user feedback when switching between documents
+  - Implemented fallback to default questions if document-specific questions are not available
+  - Added visual feedback with toast notifications for successful question loading
+  - Maintained existing functionality for adding, removing, and editing checklist items
+  - Ensured seamless integration with existing analysis and export features
+
+- **2025-01-XX: Certificate Grouping Fix (Completed)**
+  - Fixed certificate requirements being treated as separate checklist items
+  - Combined certificate sub-items into single checklist items across all documents:
+    - "Certificates of the following: a) availability of encumbrance-free land for the project, b) certification that costs proposed is as per the latest applicable schedule of rates, c) non-duplication certificate"
+  - Updated all 5 document-specific question sets to use proper certificate grouping
+  - Maintained proper formatting and readability while ensuring single checklist item treatment
+  - Preserved existing styling and UI functionality without distortion
+  - Ensured consistent certificate grouping across all document types
+
+- **2025-01-XX: Certificate Line Break Formatting (Completed)**
+  - Enhanced certificate display with proper line breaks for better readability
+  - Updated backend to include `\n` characters in certificate text
+  - Modified frontend ChecklistAnalyzer to use textarea instead of input fields
+  - Added CSS styling to preserve line breaks with `white-space: pre-wrap`
+  - Certificate items now display as:
+    ```
+    Certificates of the following:
+    a) availability of encumbrance-free land for the project
+    b) certification that costs proposed is as per the latest applicable schedule of rates
+    c) non-duplication certificate
+    ```
+  - Improved user experience with better visual formatting while maintaining single checklist item structure
+  - Implemented auto-resizing textareas that grow to fit content
+  - Added proper line height and word wrapping for optimal text display
+
 ## Notes
 - Document-level citations only (no page numbers required)
 - English language only

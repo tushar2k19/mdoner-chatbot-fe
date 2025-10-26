@@ -82,23 +82,30 @@
         <!-- Right: checklist items -->
         <div class="panel checklist-panel">
           <div class="panel-header">
-            <div class="panel-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3l8-8"/>
-                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9s9 4.03 9 9z"/>
-              </svg>
+            <div class="panel-title-group">
+              <div class="panel-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3l8-8"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9s9 4.03 9 9z"/>
+                </svg>
+              </div>
+              <h3>Checklist Items</h3>
             </div>
-            <h3>Checklist Items</h3>
+            <div v-if="isLoadingChecklist" class="loading-indicator">
+              <div class="loading-spinner-small"></div>
+              <span>Loading document-specific questions...</span>
+            </div>
           </div>
           <div class="items-container">
             <div v-for="(item, index) in checklistItems" :key="index" class="item-row">
               <div class="item-number">{{ index + 1 }}</div>
-              <input
+              <textarea
                 class="item-input"
-                type="text"
                 v-model="checklistItems[index]"
                 :placeholder="`Checklist item ${index + 1}`"
-              />
+                rows="1"
+                @input="autoResize($event)/3"
+              ></textarea>
               <button class="btn-remove" @click="removeItem(index)" title="Remove item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3,6 5,6 21,6"/>
@@ -308,6 +315,7 @@ export default {
       selectedDocument: '', // Single document selection
       checklistItems: [],
       loading: false,
+      isLoadingChecklist: false,
       results: [],
       showResults: false,
       isDarkTheme: false,
@@ -318,6 +326,16 @@ export default {
     canAnalyze() {
       const nonEmpty = this.checklistItems.filter(i => (i || '').trim().length > 0)
       return this.selectedDocument.length > 0 && nonEmpty.length > 0
+    }
+  },
+  watch: {
+    selectedDocument: {
+      handler(newDocument) {
+        if (newDocument) {
+          this.loadChecklistForDocument(newDocument)
+        }
+      },
+      immediate: false
     }
   },
   async created() {
@@ -350,15 +368,8 @@ export default {
       this.selectedDocument = this.documents[0].name
     }
 
-    // Fetch default checklist items
-    try {
-      const res = await this.$http.secured.get('/api/checklist/defaults')
-      const apiData = res && res.data && res.data.data ? res.data.data : res.data
-      this.checklistItems = (apiData && apiData.checklist_items) ? apiData.checklist_items : this.defaultItems()
-    } catch (e) {
-      // Fallback defaults
-      this.checklistItems = this.defaultItems()
-    }
+    // Load initial checklist items for the first document
+    await this.loadChecklistForDocument(this.selectedDocument)
     // Always register outside-click listener for download menu (regardless of API success)
     document.addEventListener('click', this.onDocClick)
   },
@@ -368,6 +379,39 @@ export default {
   },
 
   methods: {
+    // Load checklist items for a specific document
+    async loadChecklistForDocument(documentName) {
+      if (!documentName) {
+        this.checklistItems = this.defaultItems()
+        return
+      }
+
+      this.isLoadingChecklist = true
+      try {
+        const res = await this.$http.secured.get('/api/checklist/defaults', {
+          params: { document_name: documentName }
+        })
+        const apiData = res && res.data && res.data.data ? res.data.data : res.data
+        this.checklistItems = (apiData && apiData.checklist_items) ? apiData.checklist_items : this.defaultItems()
+        
+        // Show a toast if document-specific questions were loaded
+        if (apiData && apiData.is_document_specific) {
+          this.$toast.success(`Loaded ${apiData.total_items} document-specific checklist items`)
+        }
+        
+        // Auto-resize textareas after loading
+        this.$nextTick(() => {
+          this.resizeAllTextareas()
+        })
+      } catch (e) {
+        console.error('Failed to load document-specific checklist:', e)
+        // Fallback to default items
+        this.checklistItems = this.defaultItems()
+        this.$toast.warning('Using default checklist items')
+      } finally {
+        this.isLoadingChecklist = false
+      }
+    },
 
     // Remove citation artifacts like 【...】, [Doc.pdf], inline file.pdf tokens, and page markers like 4:14Doc.pdf
     cleanCitations(txt) {
@@ -440,6 +484,20 @@ export default {
     },
     removeItem(index) {
       this.checklistItems.splice(index, 1)
+    },
+    autoResize(event) {
+      const textarea = event.target
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    },
+    resizeAllTextareas() {
+      this.$nextTick(() => {
+        const textareas = this.$el.querySelectorAll('.item-input')
+        textareas.forEach(textarea => {
+          textarea.style.height = 'auto'
+          textarea.style.height = textarea.scrollHeight + 'px'
+        })
+      })
     },
     async analyze() {
       if (!this.canAnalyze) return
@@ -877,6 +935,13 @@ export default {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  justify-content: space-between;
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .panel-icon {
@@ -896,6 +961,15 @@ export default {
   font-size: 18px;
   font-weight: 600;
   color: #2d333a;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #10a37f;
+  font-weight: 500;
 }
 
 .instruction {
@@ -1031,13 +1105,19 @@ export default {
 
 .item-input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 5px 8px;
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   font-family: inherit;
   font-size: 14px;
   background: white;
   transition: all 0.2s ease;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 20px;
+  line-height: 1.2;
 }
 
 .item-input:focus {
@@ -1137,16 +1217,16 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px;
+  padding: 50px 20px;
   text-align: center;
   background: white;
   border-radius: 12px;
-  margin: 24px;
+  margin: 18px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .loading-content {
-  max-width: 400px;
+  max-width: 375px;
 }
 
 .loading-spinner-large {
