@@ -661,7 +661,7 @@ Circuit Breaker: ${status.shouldReset ? 'Should Reset' : 'Normal'}
       this.loading = true;
       
       // Show user that processing might take time
-      this.$toast.info('Processing your message... This may take 15-30 seconds for complex queries.');
+      // this.$toast.info('Processing your message... This may take 15-30 seconds for complex queries.');
       
       try {
         // Ensure we have a current conversation

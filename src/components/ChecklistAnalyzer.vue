@@ -83,13 +83,13 @@
         <div class="panel checklist-panel">
           <div class="panel-header">
             <div class="panel-title-group">
-              <div class="panel-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 11l3 3l8-8"/>
-                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9s9 4.03 9 9z"/>
-                </svg>
-              </div>
-              <h3>Checklist Items</h3>
+            <div class="panel-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3l8-8"/>
+                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9s9 4.03 9 9z"/>
+              </svg>
+            </div>
+            <h3>Checklist Items</h3>
             </div>
             <div v-if="isLoadingChecklist" class="loading-indicator">
               <div class="loading-spinner-small"></div>
@@ -394,10 +394,7 @@ export default {
         const apiData = res && res.data && res.data.data ? res.data.data : res.data
         this.checklistItems = (apiData && apiData.checklist_items) ? apiData.checklist_items : this.defaultItems()
         
-        // Show a toast if document-specific questions were loaded
-        if (apiData && apiData.is_document_specific) {
-          this.$toast.success(`Loaded ${apiData.total_items} document-specific checklist items`)
-        }
+        
         
         // Auto-resize textareas after loading
         this.$nextTick(() => {
@@ -529,84 +526,409 @@ export default {
     
     // Frontend no longer cleans remarks; backend returns already-clean text
     // cleanRemark removed
-    // PDF export (data-driven, selectable text)
+    // PDF export (data-driven, selectable text) - Professional Government Template
     exportToPDF() {
       this.showDownloadMenu = false
       if (!this.results || !this.results.length) return
 
-      const title = 'Checklist Analysis'
       const docName = this.getDisplayName(this.selectedDocument)
-      const dateStr = new Date().toISOString().slice(0, 10)
+      const dateStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
+      const timeStr = new Date().toLocaleTimeString('en-IN')
 
       const yes = this.getStatusCount('yes')
       const partial = this.getStatusCount('partial')
       const no = this.getStatusCount('no')
+      const total = this.results.length
+      const completionPercentage = Math.round((yes / total) * 100)
 
-      // Build pdfmake table body with colored status cells
+      // Build pdfmake table body with enhanced colored status cells
       const tableBody = [
-        [{ text: 'Item #', style: 'tableHeader' }, { text: 'Checklist Item', style: 'tableHeader' }, { text: 'Status', style: 'tableHeader' }, { text: 'Remarks', style: 'tableHeader' }],
+        [
+          { text: 'S.No.', style: 'tableHeader', fillColor: '#000000' }, 
+          { text: 'Checklist Item', style: 'tableHeader', fillColor: '#000000' }, 
+          { text: 'Status', style: 'tableHeader', fillColor: '#000000' }, 
+          { text: 'Remarks', style: 'tableHeader', fillColor: '#000000' }
+        ],
         ...this.results.map((r, i) => {
           const status = (r.status || '').toString()
           const s = status.toLowerCase()
-          let statusCell = { text: status, alignment: 'center' }
+          let statusCell = { text: status, alignment: 'center', fontSize: 9, bold: true }
+          
           if (s.includes('yes') || s.includes('found') || s.includes('covered')) {
-            statusCell = { text: status, alignment: 'center', fillColor: '#EAF7F0', color: '#14532D' }
+            statusCell = { text: '✓ ' + status, alignment: 'center', fillColor: '#d1fae5', color: '#065f46', bold: true, fontSize: 9 }
           } else if (s.includes('partial')) {
-            statusCell = { text: status, alignment: 'center', fillColor: '#FFF4D6', color: '#7C2D12' }
+            statusCell = { text: '◐ ' + status, alignment: 'center', fillColor: '#fef3c7', color: '#92400e', bold: true, fontSize: 9 }
           } else if (s.includes('no') || s.includes('not')) {
-            statusCell = { text: status, alignment: 'center', fillColor: '#FDE2E2', color: '#991B1B' }
+            statusCell = { text: '✗ ' + status, alignment: 'center', fillColor: '#fee2e2', color: '#991b1b', bold: true, fontSize: 9 }
           }
+          
           return [
-            { text: String(i + 1) },
-            { text: r.item || '' },
+            { text: String(i + 1), alignment: 'center', fontSize: 9, color: '#1f2937' },
+            { text: r.item || '', fontSize: 9, color: '#111827' },
             statusCell,
-            { text: this.paragraphizeForPdf(this.cleanCitations(r.remarks || '')) }
+            { text: this.paragraphizeForPdf(this.cleanCitations(r.remarks || '')), fontSize: 8, color: '#374151' }
           ]
         })
       ]
 
       const docDefinition = {
         pageSize: 'A4',
-        pageMargins: [24, 36, 24, 36],
-        footer: function(currentPage, pageCount) {
-          return { text: `Page ${currentPage} of ${pageCount}` , alignment: 'right', margin: [0, 0, 24, 12], color: '#6B7280', fontSize: 9 }
+        pageMargins: [40, 100, 40, 60],
+        
+        // Professional Header on every page - Compact version
+        header: function(currentPage, pageCount) {
+          return {
+            stack: [
+              // Black gradient header background - reduced height
+              {
+                canvas: [
+                  {
+                    type: 'rect',
+                    x: 0,
+                    y: 0,
+                    w: 595,
+                    h: 80,
+                    color: '#000000',
+                    linearGradient: ['#000000', '#1a1a1a']
+                  }
+                ]
+              },
+              // Government of India text - reduced margin
+              {
+                text: 'Government of India',
+                style: 'govHeader',
+                margin: [40, -70, 0, 0]
+              },
+              // Ministry name - reduced margin
+              {
+                text: 'Ministry of Development of North Eastern Region',
+                style: 'ministryHeader',
+                margin: [40, 2, 0, 0]
+              },
+              // Subtitle - reduced margin
+              {
+                text: 'DPR Checklist Analysis Report',
+                style: 'subtitleHeader',
+                margin: [40, 3, 0, 0]
+              },
+              // Decorative line - reduced margin
+              {
+                canvas: [
+                  {
+                    type: 'line',
+                    x1: 40,
+                    y1: 0,
+                    x2: 555,
+                    y2: 0,
+                    lineWidth: 2,
+                    lineColor: '#fbbf24'
+                  }
+                ],
+                margin: [0, 6, 0, 0]
+              }
+            ]
+          }
         },
+        
+        // Professional Footer
+        footer: function(currentPage, pageCount) {
+          return {
+            stack: [
+              {
+                canvas: [
+                  {
+                    type: 'line',
+                    x1: 40,
+                    y1: 0,
+                    x2: 555,
+                    y2: 0,
+                    lineWidth: 0.5,
+                    lineColor: '#cbd5e1'
+                  }
+                ]
+              },
+              {
+                columns: [
+                  {
+                    text: `Generated on: ${dateStr} at ${timeStr}`,
+                    style: 'footer',
+                    alignment: 'left',
+                    margin: [40, 8, 0, 0]
+                  },
+                  {
+                    text: `Page ${currentPage} of ${pageCount}`,
+                    style: 'footer',
+                    alignment: 'right',
+                    margin: [0, 8, 40, 0]
+                  }
+                ]
+              },
+              {
+                text: 'Ministry of Development of North Eastern Region',
+                style: 'footerMinistry',
+                alignment: 'center',
+                margin: [0, 4, 0, 12]
+              }
+            ]
+          }
+        },
+        
         content: [
-          { text: title, style: 'title' },
-          { columns: [
-              { text: `Document: ${docName}`, style: 'meta' },
-              { text: `Date: ${dateStr}`, style: 'meta', alignment: 'right' }
-            ], margin: [0, 2, 0, 8]
+          // Document Information Card - Compact
+          {
+            table: {
+              widths: ['*'],
+              body: [
+                [
+                  {
+                    stack: [
+                      {
+                        columns: [
+                          {
+                            width: '*',
+                            stack: [
+                              { text: 'Document Information', style: 'sectionTitle', margin: [0, 0, 0, 4] },
+                              { text: `DPR Name: ${docName}`, style: 'infoLabel', margin: [0, 2, 0, 0], bold: true },
+                              { text: `Analysis Date: ${dateStr}`, style: 'infoLabel', margin: [0, 1, 0, 0], bold: true },
+                              { text: `Total Checklist Items: ${total}`, style: 'infoLabel', margin: [0, 1, 0, 0], bold: true }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    fillColor: '#f8fafc',
+                    margin: [8, 8, 8, 8]
+                  }
+                ]
+              ]
+            },
+            layout: {
+              hLineWidth: function() { return 1 },
+              vLineWidth: function() { return 1 },
+              hLineColor: function() { return '#cbd5e1' },
+              vLineColor: function() { return '#cbd5e1' }
+            },
+            margin: [0, 0, 0, 12]
           },
-          { canvas: [ { type: 'line', x1: 0, y1: 0, x2: 555, y2: 0, lineWidth: 0.75, lineColor: '#E5E7EB' } ], margin: [0,0,0,10] },
-          { columns: [
-              { text: `${yes} Found`, style: 'chipGreen' },
-              { text: `${partial} Partial`, style: 'chipAmber' },
-              { text: `${no} Not Found`, style: 'chipRed' },
-              { text: '', width: '*' }
-            ], margin: [0, 0, 0, 8]
+          
+          // Summary Statistics Cards
+          {
+            text: 'Analysis Summary',
+            style: 'sectionTitle',
+            margin: [0, 0, 0, 8]
           },
           {
-            table: { headerRows: 1, widths: [40, 190, 70, '*'], body: tableBody },
-            layout: {
-              fillColor: function (rowIndex, node, columnIndex) {
-                if (rowIndex === 0) return '#1F2937'
-                return (rowIndex % 2 === 0) ? '#F9FAFB' : null
+            columns: [
+              {
+                width: '25%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      stack: [
+                        { text: yes.toString(), style: 'statNumber', color: '#065f46' },
+                        { text: 'Found', style: 'statLabel', color: '#065f46' }
+                      ],
+                      fillColor: '#d1fae5',
+                      alignment: 'center',
+                      margin: [6, 8, 6, 8]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
               },
-              hLineColor: '#D1D5DB', vLineColor: '#D1D5DB'
+              {
+                width: '25%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      stack: [
+                        { text: partial.toString(), style: 'statNumber', color: '#92400e' },
+                        { text: 'Partial', style: 'statLabel', color: '#92400e' }
+                      ],
+                      fillColor: '#fef3c7',
+                      alignment: 'center',
+                      margin: [6, 8, 6, 8]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
+              },
+              {
+                width: '25%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      stack: [
+                        { text: no.toString(), style: 'statNumber', color: '#991b1b' },
+                        { text: 'Not Found', style: 'statLabel', color: '#991b1b' }
+                      ],
+                      fillColor: '#fee2e2',
+                      alignment: 'center',
+                      margin: [6, 8, 6, 8]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
+              },
+              {
+                width: '25%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      stack: [
+                        { text: `${completionPercentage}%`, style: 'statNumber', color: '#1e40af' },
+                        { text: 'Complete', style: 'statLabel', color: '#1e40af' }
+                      ],
+                      fillColor: '#dbeafe',
+                      alignment: 'center',
+                      margin: [6, 8, 6, 8]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
+              }
+            ],
+            columnGap: 8,
+            margin: [0, 0, 0, 12]
+          },
+          
+          // Progress Bar
+          {
+            stack: [
+              { text: 'Completion Progress', style: 'progressLabel', margin: [0, 0, 0, 6] },
+              {
+                canvas: [
+                  // Background bar
+                  {
+                    type: 'rect',
+                    x: 0,
+                    y: 0,
+                    w: 515,
+                    h: 20,
+                    r: 10,
+                    color: '#e5e7eb'
+                  },
+                  // Progress bar
+                  {
+                    type: 'rect',
+                    x: 0,
+                    y: 0,
+                    w: (515 * completionPercentage / 100),
+                    h: 20,
+                    r: 10,
+                    linearGradient: ['#10b981', '#059669']
+                  }
+                ]
+              }
+            ],
+            margin: [0, 0, 0, 16]
+          },
+          
+          // Checklist Items Section
+          {
+            text: 'Detailed Checklist Analysis',
+            style: 'sectionTitle',
+            margin: [0, 0, 0, 8]
+          },
+          
+          // Main Table
+          {
+            table: {
+              headerRows: 1,
+              widths: [35, 180, 70, '*'],
+              body: tableBody
+            },
+            layout: {
+              fillColor: function(rowIndex) {
+                if (rowIndex === 0) return '#1e40af'
+                return (rowIndex % 2 === 0) ? '#f9fafb' : '#ffffff'
+              },
+              hLineWidth: function(i, node) {
+                return (i === 0 || i === 1 || i === node.table.body.length) ? 1.5 : 0.5
+              },
+              vLineWidth: function() { return 0.5 },
+              hLineColor: function(i) {
+                return (i === 0 || i === 1) ? '#1e40af' : '#e5e7eb'
+              },
+              vLineColor: function() { return '#e5e7eb' },
+              paddingLeft: function() { return 8 },
+              paddingRight: function() { return 8 },
+              paddingTop: function() { return 6 },
+              paddingBottom: function() { return 6 }
             }
           }
         ],
+        
         styles: {
-          title: { fontSize: 16, bold: true, color: '#111827', margin: [0,0,0,6] },
-          meta: { fontSize: 10, color: '#111827' },
-          tableHeader: { color: '#FFFFFF', bold: true, alignment: 'center' },
-          statusCell: { alignment: 'center' },
-          chipGreen: { color: '#166534', background: '#DCFCE7', margin: [0, 4, 8, 8] },
-          chipAmber: { color: '#92400E', background: '#FEF3C7', margin: [0, 4, 8, 8] },
-          chipRed: { color: '#B91C1C', background: '#FEE2E2', margin: [0, 4, 8, 8] }
+          govHeader: {
+            fontSize: 9,
+            color: '#ffffff',
+            bold: false,
+            letterSpacing: 0.3
+          },
+          ministryHeader: {
+            fontSize: 14,
+            bold: true,
+            color: '#ffffff',
+            letterSpacing: 0.2
+          },
+          subtitleHeader: {
+            fontSize: 9,
+            color: '#fbbf24',
+            bold: false,
+            italics: true
+          },
+          sectionTitle: {
+            fontSize: 14,
+            bold: true,
+            color: '#1e40af',
+            margin: [0, 8, 0, 4]
+          },
+          infoLabel: {
+            fontSize: 10,
+            color: '#334155',
+            lineHeight: 1.4
+          },
+          statNumber: {
+            fontSize: 24,
+            bold: true,
+            margin: [0, 0, 0, 4]
+          },
+          statLabel: {
+            fontSize: 10,
+            bold: true
+          },
+          progressLabel: {
+            fontSize: 11,
+            bold: true,
+            color: '#475569'
+          },
+          tableHeader: {
+            color: '#ffffff',
+            bold: true,
+            alignment: 'center',
+            fontSize: 10
+          },
+          footer: {
+            fontSize: 8,
+            color: '#64748b'
+          },
+          footerMinistry: {
+            fontSize: 7,
+            color: '#94a3b8',
+            italics: true
+          }
         },
-        defaultStyle: { fontSize: 10, color: '#2D333A' }
+        
+        defaultStyle: {
+          fontSize: 9,
+          color: '#1f2937',
+          lineHeight: 1.3
+        }
       }
 
       pdfMake.createPdf(docDefinition).download(`Checklist_${this.safeFilename(docName)}_${dateStr}.pdf`)
